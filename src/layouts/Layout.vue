@@ -378,8 +378,7 @@ const submitPasswordChange = async () => {
 
 <style scoped lang="scss">
 .modern-layout {
-  height: 100vh;
-  overflow: hidden;
+  height: 100%;
 }
 
 .main-container {

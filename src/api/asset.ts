@@ -7,7 +7,7 @@ export const assetApi = {
     const formData = new FormData()
     formData.append('file', file)
     
-    return request.post('/admin/asset/upload', formData, {
+    return request.post('/rest/v1/asset/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -21,26 +21,26 @@ export const assetApi = {
     sort?: string
     direction?: string
   }): Promise<ApiPageResult<AssetDTO>> {
-    return request.get('/admin/asset', { params })
+    return request.get('/rest/v1/asset', { params })
   },
   
   // 获取资源详情
   getDetail(id: number): Promise<AssetDTO> {
-    return request.get(`/admin/asset/${id}`)
+    return request.get(`/rest/v1/asset/${id}`)
   },
   
   // 更新资源信息
   update(id: number, data: { altText?: string; caption?: string }): Promise<AssetDTO> {
-    return request.put(`/admin/asset/${id}`, data)
+    return request.put(`/rest/v1/asset/${id}`, data)
   },
   
   // 删除资源
   delete(id: number): Promise<void> {
-    return request.delete(`/admin/asset/${id}`)
+    return request.delete(`/rest/v1/asset/${id}`)
   },
   
   // 搜索资源
   search(keyword: string): Promise<AssetDTO[]> {
-    return request.get('/admin/asset/search', { params: { keyword } })
+    return request.get('/rest/v1/asset/search', { params: { keyword } })
   }
 }

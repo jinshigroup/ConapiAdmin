@@ -56,13 +56,11 @@
             >
               <div class="asset-preview">
                 <div v-if="isVideo(asset)" class="video-preview">
-                  <div class="video-wrapper" @click.stop="playVideo(asset.downloadUrl || '')">
-                    <video 
-                      :src="asset.previewUrl || ''" 
-                      class="asset-video"
-                      muted
-                      preload="auto"
-                    />
+                  <div class="video-wrapper" @click.stop="playVideo(asset.previewUrl)">
+                    <div class="no-preview">
+                      <el-icon :size="40"><VideoPlay /></el-icon>
+                      <div>点击播放视频</div>
+                    </div>
                     <div class="video-overlay">
                       <el-icon class="play-icon"><VideoPlay /></el-icon>
                     </div>
@@ -70,19 +68,21 @@
                 </div>
                 <el-image
                   v-else
-                  :src="asset.previewUrl || ''"
+                  :src="imageUrls[asset.previewUrl] || ''"
                   :alt="asset.altText || asset.filename"
                   fit="cover"
                   class="asset-image"
-                  :preview-src-list="[asset.previewUrl || '']"
+                  :preview-src-list="[imageUrls[asset.previewUrl] || '']"
                   :preview-teleported="true"
                   hide-on-click-modal
                   @click.stop="handlePreview(asset)"
+                  @error="console.log('图片加载错误:', $event, '预览URL:', asset.previewUrl, '生成的URL:', imageUrls[asset.previewUrl])"
                 >
                   <template #error>
                     <div class="image-slot">
                       <el-icon v-if="isImage(asset)" :size="40"><Picture /></el-icon>
                       <el-icon v-else :size="40"><Document /></el-icon>
+                      <div v-if="asset.previewUrl">图片加载失败</div>
                     </div>
                   </template>
                 </el-image>
@@ -183,11 +183,11 @@
       >
         <el-form-item :label="t('media.preview')">
           <el-image
-            :src="currentAsset.previewUrl || ''"
+            :src="imageUrls[currentAsset.previewUrl] || ''"
             :alt="currentAsset.altText || currentAsset.filename"
             fit="cover"
             class="detail-image"
-            :preview-src-list="[currentAsset.previewUrl || '']"
+            :preview-src-list="[imageUrls[currentAsset.previewUrl] || '']"
             :preview-teleported="true"
             hide-on-click-modal
           />
@@ -242,6 +242,7 @@ import { assetApi } from '@/api/asset'
 import type { AssetDTO } from '@/types/api'
 import { formatDate } from '@/utils/date'
 import { useUserStore } from '@/stores/user'
+import request from '@/api/request'
 import { VideoPlay, Picture, Document } from '@element-plus/icons-vue'
 
 const { t } = useI18n()
@@ -255,6 +256,9 @@ const detailDialogVisible = ref(false)
 const selectedAssets = ref<number[]>([])
 const uploadFileList = ref<UploadUserFile[]>([])
 const currentAsset = ref<AssetDTO | null>(null)
+
+// 存储已获取的图片URL
+const imageUrls = ref<Record<string, string>>({})
 
 // 分页配置
 const pagination = reactive({
@@ -286,6 +290,87 @@ const isVideo = (asset: AssetDTO) => {
   return asset.mimeType && asset.mimeType.startsWith('video/')
 }
 
+// 获取带认证的图片URL
+const getAuthenticatedImageUrl = async (previewUrl: string) => {
+  // 如果已经获取过该URL，直接返回
+  if (imageUrls.value[previewUrl]) {
+    console.log('使用缓存的图片URL:', previewUrl, '->', imageUrls.value[previewUrl]);
+    return imageUrls.value[previewUrl]
+  }
+  
+  if (!previewUrl) return ''
+
+  try {
+    console.log('开始获取图片:', previewUrl);
+    
+    // 使用 fetch API 获取图片数据
+    const token = useUserStore().token;
+    const headers = {
+      'Authorization': `Bearer ${token}`
+    };
+
+    const response = await fetch(previewUrl, { headers });
+
+    if (!response.ok) {
+      console.error('获取图片失败，HTTP状态码:', response.status);
+      return '';
+    }
+
+    const blob = await response.blob();
+    console.log('图片响应数据:', blob);
+    
+    // 创建本地对象URL
+    const imageUrl = URL.createObjectURL(blob);
+    // 存储URL映射
+    imageUrls.value[previewUrl] = imageUrl;
+    console.log('图片获取成功:', previewUrl, '->', imageUrl);
+    return imageUrl;
+  } catch (error) {
+    console.error('获取图片失败:', error);
+    return '';
+  }
+}
+
+// 获取带认证的视频URL
+const getAuthenticatedVideoUrl = async (videoUrl: string) => {
+  // 如果已经获取过该URL，直接返回
+  if (imageUrls.value[videoUrl]) {
+    console.log('使用缓存的视频URL:', videoUrl, '->', imageUrls.value[videoUrl]);
+    return imageUrls.value[videoUrl];
+  }
+  
+  if (!videoUrl) {return '';}
+
+  try {
+    console.log('开始获取视频:', videoUrl);
+
+    // 使用 fetch API 获取图片数据
+    const token = useUserStore().token;
+    const headers = {
+      'Authorization': `Bearer ${token}`
+    };
+
+    const response = await fetch(videoUrl, { headers });
+
+    console.log('视频响应数据:', response);
+
+
+    const blob = await response.blob();
+    console.log('图片响应数据:', blob);
+
+
+    // 创建本地对象URL
+    const videoUrlObj = URL.createObjectURL(blob);
+    // 存储URL映射
+    imageUrls.value[videoUrl] = videoUrlObj;
+    console.log('视频获取成功:', videoUrl, '->', videoUrlObj);
+    return videoUrlObj;
+  } catch (error: any) {
+    console.error('获取视频失败:', error);
+    return '';
+  }
+}
+
 // 格式化文件大小
 const formatFileSize = (bytes: number) => {
   if (bytes === 0) return '0 Bytes'
@@ -306,11 +391,68 @@ const fetchAssets = async () => {
     
     assets.value = response.content
     pagination.total = response.totalElements || 0
+    
+    console.log('获取到资源列表:', assets.value);
+    
+    // 预加载所有图片
+    const imageAssets = assets.value.filter(asset => isImage(asset) && asset.previewUrl);
+    console.log('需要预加载的图片资源:', imageAssets);
+    
+    // 预加载图片
+    await Promise.all(imageAssets.map(async (asset) => {
+      console.log('预加载图片:', asset.previewUrl);
+      await getAuthenticatedImageUrl(asset.previewUrl)
+    }))
+    
+    console.log('所有资源预加载完成，当前imageUrls:', imageUrls.value);
   } catch (error) {
     console.error('获取资源列表失败:', error)
     ElMessage.error(t('media.fetchFailed'))
   } finally {
     loading.value = false
+  }
+}
+
+// 显示资源详情
+const showAssetDetail = async (asset: AssetDTO) => {
+  try {
+    const detailedAsset = await assetApi.getDetail(asset.id)
+    currentAsset.value = detailedAsset
+    detailForm.altText = detailedAsset.altText || ''
+    detailForm.caption = detailedAsset.caption || ''
+    
+    console.log('显示资源详情:', detailedAsset);
+    
+    // 预加载详情中的图片
+    if (detailedAsset.previewUrl) {
+      console.log('预加载详情图片:', detailedAsset.previewUrl);
+      await getAuthenticatedImageUrl(detailedAsset.previewUrl)
+      console.log('详情图片预加载完成，当前imageUrls:', imageUrls.value);
+    }
+    
+    detailDialogVisible.value = true
+  } catch (error) {
+    console.error('获取资源详情失败:', error)
+    ElMessage.error(t('media.fetchDetailFailed'))
+  }
+}
+
+// 更新资源详情
+const updateAssetDetail = async () => {
+  if (!currentAsset.value) return
+
+  try {
+    const updatedAsset = await assetApi.update(currentAsset.value.id, {
+      altText: detailForm.altText,
+      caption: detailForm.caption
+    })
+    
+    ElMessage.success(t('media.updateSuccess'))
+    detailDialogVisible.value = false
+    fetchAssets()
+  } catch (error) {
+    console.error('更新失败:', error)
+    ElMessage.error(t('media.updateFailed'))
   }
 }
 
@@ -408,39 +550,6 @@ const handleBatchDelete = async () => {
   }
 }
 
-// 显示资源详情
-const showAssetDetail = async (asset: AssetDTO) => {
-  try {
-    const detailedAsset = await assetApi.getDetail(asset.id)
-    currentAsset.value = detailedAsset
-    detailForm.altText = detailedAsset.altText || ''
-    detailForm.caption = detailedAsset.caption || ''
-    detailDialogVisible.value = true
-  } catch (error) {
-    console.error('获取资源详情失败:', error)
-    ElMessage.error(t('media.fetchDetailFailed'))
-  }
-}
-
-// 更新资源详情
-const updateAssetDetail = async () => {
-  if (!currentAsset.value) return
-
-  try {
-    const updatedAsset = await assetApi.update(currentAsset.value.id, {
-      altText: detailForm.altText,
-      caption: detailForm.caption
-    })
-    
-    ElMessage.success(t('media.updateSuccess'))
-    detailDialogVisible.value = false
-    fetchAssets()
-  } catch (error) {
-    console.error('更新失败:', error)
-    ElMessage.error(t('media.updateFailed'))
-  }
-}
-
 // 处理搜索
 const handleSearch = async (event?: Event) => {
   // 阻止事件的默认行为，防止表单提交导致页面跳转
@@ -488,7 +597,7 @@ const handleCurrentChange = (val: number) => {
 }
 
 // 播放视频
-const playVideo = (videoUrl: string) => {
+const playVideo = async (videoUrl: string | undefined) => {
   console.log('尝试播放视频，URL为:', videoUrl);
   
   // 检查URL是否有效
@@ -498,12 +607,27 @@ const playVideo = (videoUrl: string) => {
     return;
   }
   
-  // 创建带认证参数的URL
-  const userStore = useUserStore();
-  const token = userStore.token;
-  const videoUrlWithAuth = token 
-    ? `${videoUrl}${videoUrl.includes('?') ? '&' : '?'}token=${token}`
-    : videoUrl;
+  try {
+    // 获取带认证的视频URL
+    const authenticatedVideoUrl = await getAuthenticatedVideoUrl(videoUrl);
+    
+    if (!authenticatedVideoUrl) {
+      // 错误信息已经在 getAuthenticatedVideoUrl 中显示
+      console.log('无法获取视频数据');
+      return;
+    }
+    
+    // 创建视频播放模态框
+    createVideoModal(authenticatedVideoUrl);
+  } catch (error: any) {
+    console.error('播放视频失败:', error);
+    ElMessage.error('视频播放失败: ' + (error.message || '未知错误'));
+  }
+};
+
+// 创建视频播放模态框
+const createVideoModal = (videoSrc: string) => {
+  console.log('创建视频播放模态框，视频源:', videoSrc);
   
   // 创建视频播放模态框
   const modal = document.createElement('div');
@@ -523,7 +647,7 @@ const playVideo = (videoUrl: string) => {
   
   // 创建视频元素
   const video = document.createElement('video');
-  video.src = videoUrlWithAuth;
+  video.src = videoSrc;
   video.controls = true;
   video.autoplay = true; // 启用自动播放
   video.playsInline = true; // iOS Safari兼容
@@ -535,10 +659,43 @@ const playVideo = (videoUrl: string) => {
     background: black;
   `;
   
+  // 添加加载提示
+  const loadingIndicator = document.createElement('div');
+  loadingIndicator.textContent = '视频加载中...';
+  loadingIndicator.style.cssText = `
+    position: absolute;
+    color: white;
+    font-size: 16px;
+  `;
+  modal.appendChild(loadingIndicator);
+  
   // 添加错误处理
   video.addEventListener('error', (e) => {
     console.error('视频播放出错:', e);
+    loadingIndicator.textContent = '视频播放出错，请检查控制台了解详细信息';
     ElMessage.error('视频播放出错，请检查控制台了解详细信息');
+  });
+  
+  // 视频开始加载
+  video.addEventListener('loadstart', () => {
+    console.log('视频开始加载');
+    loadingIndicator.textContent = '视频加载中...';
+  });
+  
+  // 视频可以播放
+  video.addEventListener('canplay', () => {
+    console.log('视频可以播放');
+    if (modal.contains(loadingIndicator)) {
+      modal.removeChild(loadingIndicator);
+    }
+  });
+  
+  // 视频播放中
+  video.addEventListener('playing', () => {
+    console.log('视频正在播放');
+    if (modal.contains(loadingIndicator)) {
+      modal.removeChild(loadingIndicator);
+    }
   });
   
   // 创建关闭按钮
@@ -561,12 +718,14 @@ const playVideo = (videoUrl: string) => {
   closeBtn.onclick = () => {
     document.body.removeChild(modal);
     video.pause();
+    // 注意：这里不释放URL，因为我们可能还会用到它
   };
   
   modal.onclick = (e) => {
     if (e.target === modal) {
       document.body.removeChild(modal);
       video.pause();
+      // 注意：这里不释放URL，因为我们可能还会用到它
     }
   };
   
@@ -583,13 +742,9 @@ const playVideo = (videoUrl: string) => {
   // 视频播放事件
   video.addEventListener('play', () => {
     console.log('视频开始播放');
-  });
-  
-  // 视频准备就绪事件
-  video.addEventListener('canplay', () => {
-    console.log('视频可以播放');
-    // 尝试播放视频
-    ensureVideoPlayback(video);
+    if (modal.contains(loadingIndicator)) {
+      modal.removeChild(loadingIndicator);
+    }
   });
   
   // 组装模态框
@@ -600,11 +755,6 @@ const playVideo = (videoUrl: string) => {
   // 确保视频加载
   video.load();
   console.log('视频加载已启动');
-  
-  // 延迟尝试播放视频
-  setTimeout(() => {
-    ensureVideoPlayback(video);
-  }, 100);
 };
 
 // 确保视频播放
@@ -742,6 +892,18 @@ onMounted(() => {
             height: 100%;
             background-color: #f5f7fa;
             color: #909399;
+            flex-direction: column;
+          }
+
+          .no-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 117%;
+            background-color: #ccc;
+            color: #909399;
+            flex-direction: column;
           }
 
           .video-preview {
@@ -749,18 +911,14 @@ onMounted(() => {
             height: 100%;
             position: relative;
             cursor: pointer;
-            background-color: #000;
+            background-color: #f5f7fa;
 
             .video-wrapper {
               width: 100%;
               height: 100%;
               position: relative;
-            }
+              
 
-            .asset-video {
-              width: 100%;
-              height: 100%;
-              object-fit: cover;
             }
 
             .video-overlay {
@@ -859,5 +1017,4 @@ onMounted(() => {
     max-height: 300px;
     object-fit: contain;
   }
-}
-</style>
+}</style>

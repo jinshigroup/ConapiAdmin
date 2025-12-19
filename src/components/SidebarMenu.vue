@@ -123,9 +123,6 @@ watch(() => t('dashboard.title'), () => {
 
 <style scoped lang="scss">
 .sidebar-menu-wrapper {
-  min-width: 64px;
-  min-height: calc(100vh - 60px);
-  width: 100%;
   overflow: hidden;
 }
 
