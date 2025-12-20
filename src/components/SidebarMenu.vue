@@ -15,7 +15,7 @@
         v-for="route in menuRoutes"
         :key="route.path"
         :index="route.path"
-        v-if="!route.hidden"
+        v-if="!route.meta.hidden"
       >
         <el-icon v-if="route.meta?.icon">
           <component :is="route.meta.icon" />
@@ -52,39 +52,74 @@ const sidebarOpened = computed(() => appStore.sidebarOpened)
 const activeMenu = ref(route.path)
 
 // 菜单路由计算属性
+// const menuRoutes = computed(() => {
+//   // 处理路由以确保正确显示
+//   return permissionStore.routes.map(route => {
+//     // 复制路由对象以避免修改原始对象
+//     const processedRoute = { ...route }
+//
+//     // 处理根路径特殊情况
+//     if (route.path === '/') {
+//       // 从子路由中获取仪表盘信息
+//       if (route.children && route.children.length > 0) {
+//         const dashboardChild = route.children.find((child: any) => child.path === 'dashboard')
+//         if (dashboardChild && dashboardChild.meta) {
+//           processedRoute.meta = { ...dashboardChild.meta }
+//           processedRoute.path = '/dashboard'
+//         }
+//       }
+//     }
+//
+//     // 处理路由标题国际化
+//     if (processedRoute.meta?.title) {
+//       try {
+//         const translated = t(processedRoute.meta.title)
+//         processedRoute.title = translated !== processedRoute.meta.title ? translated : processedRoute.meta.title
+//       } catch (e) {
+//         processedRoute.title = processedRoute.meta.title
+//       }
+//     } else {
+//       processedRoute.title = processedRoute.name || processedRoute.path || 'Unknown'
+//     }
+//
+//     return processedRoute
+//   }).filter(route => route.meta?.title && !route.meta?.hidden)
+// })
+
+// 优化后的 menuRoutes 计算属性
 const menuRoutes = computed(() => {
-  // 处理路由以确保正确显示
-  return permissionStore.routes.map(route => {
-    // 复制路由对象以避免修改原始对象
-    const processedRoute = { ...route }
-    
-    // 处理根路径特殊情况
-    if (route.path === '/') {
-      // 从子路由中获取仪表盘信息
-      if (route.children && route.children.length > 0) {
-        const dashboardChild = route.children.find((child: any) => child.path === 'dashboard')
-        if (dashboardChild && dashboardChild.meta) {
-          processedRoute.meta = { ...dashboardChild.meta }
-          processedRoute.path = '/dashboard'
-        }
-      }
-    }
-    
-    // 处理路由标题国际化
-    if (processedRoute.meta?.title) {
-      try {
-        const translated = t(processedRoute.meta.title)
-        processedRoute.title = translated !== processedRoute.meta.title ? translated : processedRoute.meta.title
-      } catch (e) {
-        processedRoute.title = processedRoute.meta.title
-      }
-    } else {
-      processedRoute.title = processedRoute.name || processedRoute.path || 'Unknown'
-    }
-    
-    return processedRoute
-  }).filter(route => route.meta?.title && !route.meta?.hidden)
+  return permissionStore.routes
+      .map(processRoute)
+      .filter(route => route.meta?.title && !route.meta?.hidden)
 })
+
+// 提取路由处理逻辑为独立函数
+const processRoute = (route: any) => {
+  const processedRoute = { ...route }
+
+  // 处理根路径特殊情况
+  if (processedRoute.path === '/') {
+    const dashboardChild = processedRoute.children?.find((child: any) => child.path === 'dashboard')
+    if (dashboardChild && dashboardChild.meta) {
+      processedRoute.meta = { ...dashboardChild.meta }
+      processedRoute.path = '/dashboard'
+    }
+  }
+
+  // 处理路由标题国际化
+  if (processedRoute.meta?.title) {
+    try {
+      const translated = t(processedRoute.meta.title)
+      processedRoute.title = translated !== processedRoute.meta.title ? translated : processedRoute.meta.title
+    } catch (e) {
+      processedRoute.title = processedRoute.meta.title
+    }
+  } else {
+    processedRoute.title = processedRoute.name || processedRoute.path || 'Unknown'
+  }
+
+  return processedRoute
+}
 
 // 监听路由变化，更新激活菜单
 watch(
@@ -102,16 +137,9 @@ watch(
 const handleMenuSelect = async (index: string) => {
   // 使用 router.push 导航到选中的路由
   if (index !== route.path) {
-    try {
-      // 在跳转前发送一个自定义事件，确保任何监听此事件的组件能正确处理
-      window.dispatchEvent(new CustomEvent('menu-navigation', { detail: { path: index } }))
-      await router.push(index)
-    } catch (err) {
-      // 忽略重复导航错误
-      if (err.name !== 'NavigationDuplicated') {
-        console.error('路由跳转错误:', err)
-      }
-    }
+    // 在跳转前发送一个自定义事件，确保任何监听此事件的组件能正确处理
+    window.dispatchEvent(new CustomEvent('menu-navigation', { detail: { path: index } }))
+    await router.push(index)
   }
 }
 

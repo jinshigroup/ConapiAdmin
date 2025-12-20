@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { usePermissionStore } from '@/stores/permission'
 import Layout from '@/layouts/Layout.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Login from '@/views/Login.vue'
@@ -128,9 +127,8 @@ const router = createRouter({
 })
 
 // 全局前置守卫
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore()
-  const permissionStore = usePermissionStore()
 
   // 如果访问的是公开路由，直接放行
   if (publicRoutes.some(route => route.path === to.path)) {
@@ -151,8 +149,6 @@ router.beforeEach(async (to, from, next) => {
       try {
           // 获取用户信息
           await userStore.fetchCurrentUser()
-          // 获取权限列表
-          await permissionStore.fetchPermissions()
       } catch (error) {
           // 获取用户信息失败，清除token并跳转到登录页
           userStore.logout()

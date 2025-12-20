@@ -43,7 +43,7 @@ request.interceptors.response.use(
     return data
   },
   (error) => {
-    const { status, data } = error.response || {}
+    const { status} = error.response || {}
     
     if (status === 401) {
       const userStore = useUserStore()

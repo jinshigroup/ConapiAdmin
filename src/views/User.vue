@@ -164,6 +164,7 @@ interface User {
   email: string
   name: string
   role: string
+  password?: string
   lastLoginAt?: string
   loginCount: number
   createdAt: string
@@ -423,7 +424,7 @@ const handleSearch = async () => {
 }
 
 // 创建用户
-const createUser = async (user: CreateUserRequest): Promise<void> => {
+const createUser = (user: CreateUserRequest) => {
   return userApi.create(user)
 }
 

@@ -12,7 +12,6 @@
                     v-model="searchKeyword"
                     placeholder="搜索内容模型..."
                     clearable
-                    style="flex: 1"
                     @clear="handleSearch"
                     @keyup.enter="handleSearch"
                   >
@@ -24,14 +23,10 @@
                     type="primary" 
                     icon="Plus" 
                     @click="handleCreateModel"
-                    style="margin-left: 8px"
                   >
                     创建模型
                   </el-button>
                 </div>
-              </div>
-              <div class="header-right">
-                <!-- 移除了刷新按钮 -->
               </div>
             </div>
           </template>
@@ -44,8 +39,8 @@
                   :key="schema.id"
                   class="schema-item"
                   :class="{ active: selectedSchema?.id === schema.id }"
-                >
-                  <div class="schema-info" @click="viewEntries(schema)">
+                  @click="viewEntries(schema)">
+                  <div class="schema-info">
                     <el-icon class="schema-icon"><Collection /></el-icon>
                     <div class="schema-names">
                       <div class="display-name">{{ schema.displayName }}</div>
@@ -59,15 +54,6 @@
                         {{ schema.status === 'active' ? '活跃' : '停用' }}
                       </el-tag>
                       <span class="entry-count">{{ getEntryCount(schema.id) }} 项内容</span>
-                    </div>
-                  </div>
-                  
-                  <div class="schema-details" v-if="schema.description || (schema.definition && schema.definition.length)">
-                    <div class="schema-description" v-if="schema.description">
-                      {{ schema.description }}
-                    </div>
-                    <div class="schema-stats">
-                      <span class="field-count">{{ schema.definition?.length || 0 }} 个字段</span>
                     </div>
                   </div>
                   
@@ -143,7 +129,7 @@
 
       <!-- 右侧内容列表 -->
       <div v-if="showContentPanel" class="content-panel">
-        <EntryList 
+        <Entry
           v-if="selectedSchema"
           :schema-id="selectedSchema.id" 
           :key="`${selectedSchema.id}-${entryListKey}`"
@@ -169,17 +155,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
+import { useRoute, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import SchemaFormDialog from '@/components/SchemaFormDialog.vue'
-import EntryList from '@/views/content/EntryList.vue'
+import Entry from '@/views/Entry.vue'
 import { schemaApi } from '@/api/schema'
 import { contentApi } from '@/api/content'
 import type { ContentSchema } from '@/types/api'
-import { formatTime } from '@/utils/date'
 
 const route = useRoute()
-const router = useRouter()
 const loading = ref(false)
 const schemas = ref<ContentSchema[]>([])
 const showCreateDialog = ref(false)
@@ -193,7 +177,6 @@ const showContentPanel = ref(false) // 控制右侧内容面板的显示
 // 检查是否需要直接打开创建内容对话框
 const checkForCreateAction = () => {
   const schemaId = route.query.schemaId
-  const copyFrom = route.query.copyFrom
   const create = route.query.create
   
   // 如果有schemaId且需要创建新内容，则直接打开创建对话框
@@ -220,7 +203,7 @@ const total = ref(0)
 const entryCounts = ref<Record<number, number>>({})
 
 // 监听路由变化，如果离开当前页面，需要清理状态
-onBeforeRouteLeave((to, from) => {
+onBeforeRouteLeave(() => {
   // 重置状态
   selectedSchema.value = null
   showContentPanel.value = false
@@ -228,7 +211,7 @@ onBeforeRouteLeave((to, from) => {
 })
 
 // 监听路由更新
-onBeforeRouteUpdate((to, from) => {
+onBeforeRouteUpdate(() => {
   // 重置状态
   selectedSchema.value = null
   showContentPanel.value = false
@@ -253,7 +236,7 @@ const handleMenuNavigation = async (event: CustomEvent) => {
 
 // 添加事件监听器
 onMounted(() => {
-  window.addEventListener('menu-navigation', handleMenuNavigation as EventListener)
+  window.addEventListener('menu-navigation', handleMenuNavigation as unknown as EventListener)
   fetchSchemas().then(() => {
     // 获取模型列表后再检查是否需要执行创建操作
     checkForCreateAction()
@@ -262,7 +245,7 @@ onMounted(() => {
 
 // 组件卸载时移除事件监听器
 onUnmounted(() => {
-  window.removeEventListener('menu-navigation', handleMenuNavigation as EventListener)
+  window.removeEventListener('menu-navigation', handleMenuNavigation as unknown  as EventListener)
 })
 
 // 监听路由变化
@@ -405,13 +388,6 @@ const deleteSchema = async (schema: ContentSchema) => {
   }
 }
 
-// 分页相关方法
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
-  currentPage.value = 1
-  fetchSchemas()
-}
-
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
   fetchSchemas()
@@ -478,12 +454,6 @@ const handleCreateModel = () => {
               gap: 8px;
             }
           }
-
-          .header-right {
-            display: flex;
-            align-items: center;
-            margin-left: 16px;
-          }
         }
         
         .schema-content {
@@ -508,6 +478,7 @@ const handleCreateModel = () => {
             .schema-item {
               border-bottom: 1px solid #f5f7fa;
               transition: all 0.2s;
+              padding: 16px 0;
               
               &:last-child {
                 border-bottom: none;
@@ -525,7 +496,7 @@ const handleCreateModel = () => {
                 display: flex;
                 align-items: center;
                 gap: 10px;
-                padding: 16px 20px 8px;
+                padding: 0 20px;
                 cursor: pointer;
                 
                 .schema-icon {
@@ -535,12 +506,14 @@ const handleCreateModel = () => {
                 
                 .schema-names {
                   flex: 1;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
                   
                   .display-name {
                     font-size: 14px;
                     font-weight: 500;
                     color: #303133;
-                    margin-bottom: 2px;
                   }
                   
                   .schema-name {
@@ -561,32 +534,9 @@ const handleCreateModel = () => {
                 }
               }
               
-              .schema-details {
-                padding: 0 20px 8px 56px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                
-                .schema-description {
-                  font-size: 12px;
-                  color: #606266;
-                  flex: 1;
-                  margin-right: 10px;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                  white-space: nowrap;
-                }
-                
-                .schema-stats {
-                  font-size: 12px;
-                  color: #909399;
-                  flex-shrink: 0;
-                }
-              }
-              
               .schema-actions {
                 display: flex;
-                padding: 0 20px 16px 56px;
+                padding: 8px 20px 0 56px;
                 gap: 16px;
                 
                 :deep(.el-button) {

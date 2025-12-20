@@ -21,7 +21,7 @@
                 clearable
                 style="width: 200px; margin-right: 10px"
                 @clear="handleSearch"
-                @keyup.enter="(event) => handleSearch(event)"
+                @keyup.enter="handleSearch"
               >
                 <template #append>
                   <el-button icon="Search" @click.prevent="handleSearch" />
@@ -68,15 +68,13 @@
                 </div>
                 <el-image
                   v-else
-                  :src="imageUrls[asset.previewUrl] || ''"
+                  :src="asset.previewUrl ? imageUrls[asset.previewUrl] : ''"
                   :alt="asset.altText || asset.filename"
                   fit="cover"
                   class="asset-image"
-                  :preview-src-list="[imageUrls[asset.previewUrl] || '']"
+                  :preview-src-list="[asset.previewUrl ? imageUrls[asset.previewUrl] : '']"
                   :preview-teleported="true"
                   hide-on-click-modal
-                  @click.stop="handlePreview(asset)"
-                  @error="console.log('图片加载错误:', $event, '预览URL:', asset.previewUrl, '生成的URL:', imageUrls[asset.previewUrl])"
                 >
                   <template #error>
                     <div class="image-slot">
@@ -177,19 +175,18 @@
     >
       <el-form
         v-if="currentAsset"
-        ref="detailFormRef"
         :model="detailForm"
         label-width="100px"
       >
         <el-form-item :label="t('media.preview')">
           <el-image
-            :src="imageUrls[currentAsset.previewUrl] || ''"
-            :alt="currentAsset.altText || currentAsset.filename"
-            fit="cover"
-            class="detail-image"
-            :preview-src-list="[imageUrls[currentAsset.previewUrl] || '']"
-            :preview-teleported="true"
-            hide-on-click-modal
+              :src="currentAsset.previewUrl ? imageUrls[currentAsset.previewUrl] : ''"
+              :alt="currentAsset.altText || currentAsset.filename"
+              fit="cover"
+              class="detail-image"
+              :preview-src-list="[currentAsset.previewUrl ? imageUrls[currentAsset.previewUrl] : '']"
+              :preview-teleported="true"
+              hide-on-click-modal
           />
         </el-form-item>
         <el-form-item :label="t('media.filename')">
@@ -236,13 +233,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, UploadUserFile, FormInstance } from 'element-plus'
+import { ElMessage, ElMessageBox, UploadUserFile} from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { assetApi } from '@/api/asset'
 import type { AssetDTO } from '@/types/api'
 import { formatDate } from '@/utils/date'
 import { useUserStore } from '@/stores/user'
-import request from '@/api/request'
 import { VideoPlay, Picture, Document } from '@element-plus/icons-vue'
 
 const { t } = useI18n()
@@ -272,7 +268,6 @@ const searchKeyword = ref('')
 
 // 表单引用
 const uploadRef = ref()
-const detailFormRef = ref<FormInstance>()
 
 // 详情表单
 const detailForm = reactive({
@@ -401,7 +396,9 @@ const fetchAssets = async () => {
     // 预加载图片
     await Promise.all(imageAssets.map(async (asset) => {
       console.log('预加载图片:', asset.previewUrl);
-      await getAuthenticatedImageUrl(asset.previewUrl)
+      if (asset.previewUrl) {
+        await getAuthenticatedImageUrl(asset.previewUrl)
+      }
     }))
     
     console.log('所有资源预加载完成，当前imageUrls:', imageUrls.value);
@@ -413,40 +410,16 @@ const fetchAssets = async () => {
   }
 }
 
-// 显示资源详情
-const showAssetDetail = async (asset: AssetDTO) => {
-  try {
-    const detailedAsset = await assetApi.getDetail(asset.id)
-    currentAsset.value = detailedAsset
-    detailForm.altText = detailedAsset.altText || ''
-    detailForm.caption = detailedAsset.caption || ''
-    
-    console.log('显示资源详情:', detailedAsset);
-    
-    // 预加载详情中的图片
-    if (detailedAsset.previewUrl) {
-      console.log('预加载详情图片:', detailedAsset.previewUrl);
-      await getAuthenticatedImageUrl(detailedAsset.previewUrl)
-      console.log('详情图片预加载完成，当前imageUrls:', imageUrls.value);
-    }
-    
-    detailDialogVisible.value = true
-  } catch (error) {
-    console.error('获取资源详情失败:', error)
-    ElMessage.error(t('media.fetchDetailFailed'))
-  }
-}
-
 // 更新资源详情
 const updateAssetDetail = async () => {
   if (!currentAsset.value) return
 
   try {
-    const updatedAsset = await assetApi.update(currentAsset.value.id, {
+    await assetApi.update(currentAsset.value.id, {
       altText: detailForm.altText,
       caption: detailForm.caption
     })
-    
+
     ElMessage.success(t('media.updateSuccess'))
     detailDialogVisible.value = false
     fetchAssets()
@@ -755,57 +728,6 @@ const createVideoModal = (videoSrc: string) => {
   // 确保视频加载
   video.load();
   console.log('视频加载已启动');
-};
-
-// 确保视频播放
-const ensureVideoPlayback = (video: HTMLVideoElement) => {
-  // 尝试播放视频
-  const playPromise = video.play();
-  
-  if (playPromise !== undefined) {
-    playPromise
-      .then(() => {
-        console.log('视频播放成功');
-      })
-      .catch(e => {
-        console.log('自动播放被阻止:', e);
-        // 自动播放被阻止时，添加用户交互提示
-        const clickPrompt = document.createElement('div');
-        clickPrompt.textContent = '点击视频播放';
-        clickPrompt.style.cssText = `
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          color: white;
-          font-size: 18px;
-          background: rgba(0, 0, 0, 0.7);
-          padding: 10px 20px;
-          border-radius: 5px;
-          cursor: pointer;
-          z-index: 10002;
-        `;
-        
-        clickPrompt.onclick = () => {
-          video.muted = false;
-          video.play();
-          if (clickPrompt.parentNode) {
-            clickPrompt.parentNode.removeChild(clickPrompt);
-          }
-        };
-        
-        // 也添加到视频本身上
-        video.onclick = () => {
-          video.muted = false;
-          video.play();
-          if (clickPrompt.parentNode) {
-            clickPrompt.parentNode.removeChild(clickPrompt);
-          }
-        };
-        
-        document.querySelector('.video-modal')?.appendChild(clickPrompt);
-      });
-  }
 };
 
 // 生命周期

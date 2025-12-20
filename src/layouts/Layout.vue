@@ -144,7 +144,6 @@
       @close="resetProfileForm"
     >
       <el-form
-        ref="profileFormRef"
         :model="userProfile"
         label-width="120px"
       >
@@ -172,18 +171,16 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { usePermissionStore } from '@/stores/permission'
 import SidebarMenu from '@/components/SidebarMenu.vue'
 import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessage } from 'element-plus'
 
 // 国际化
 const { t, locale } = useI18n()
-const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -191,7 +188,6 @@ const permissionStore = usePermissionStore()
 
 // 响应式相关
 const isMobile = ref(false)
-const searchQuery = ref('')
 
 // 侧边栏状态
 const sidebarOpened = computed(() => appStore.sidebarOpened)
@@ -203,7 +199,7 @@ const currentLanguageText = computed(() => {
 
 // 用户信息
 const userAvatar = computed(() => {
-  return userStore.currentUser?.avatar || ''
+  return ''
 })
 
 const userInitial = computed(() => {
@@ -221,7 +217,6 @@ const passwordForm = reactive({
 
 // 个人资料相关
 const profileDialogVisible = ref(false)
-const profileFormRef = ref<FormInstance>()
 const userProfile = reactive({
   name: userStore.currentUser?.name || '',
   email: userStore.currentUser?.email || '',
@@ -252,37 +247,11 @@ const passwordRules = reactive<FormRules>({
   ]
 })
 
-const profileRules: FormRules = {
-  name: [
-    { required: true, message: t('common.pleaseEnter') + t('user.userName'), trigger: 'blur' }
-  ],
-  email: [
-    { required: true, message: t('common.pleaseEnter') + t('user.userEmail'), trigger: 'blur' },
-    { type: 'email', message: t('common.pleaseEnter') + t('user.userEmail'), trigger: 'blur' }
-  ]
-}
-
-// 添加日期格式化函数
-const formatDate = (dateString?: string) => {
-  if (!dateString) return '从未登录'
-  try {
-    const date = new Date(dateString)
-    // 检查日期是否有效
-    if (isNaN(date.getTime())) {
-      return '无效日期'
-    }
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
-  } catch (error) {
-    console.error('日期格式化错误:', error)
-    return '日期解析错误'
-  }
-}
-
 // 检测屏幕尺寸
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 768
   if (isMobile.value) {
-    appStore.closeSidebar()
+    appStore.toggleSidebar()
   }
 }
 
@@ -308,7 +277,7 @@ const toggleSidebar = () => {
 
 // 关闭侧边栏（移动端）
 const closeSidebar = () => {
-  appStore.closeSidebar()
+  appStore.toggleSidebar()
 }
 
 // 切换语言
@@ -399,7 +368,7 @@ const submitPasswordChange = async () => {
     .logo-section {
       display: flex;
       align-items: center;
-      padding: 16px 20px;
+      padding: 14px 20px;
       border-bottom: 1px solid #002140;
       
       .logo-img {

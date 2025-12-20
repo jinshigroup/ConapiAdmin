@@ -34,16 +34,6 @@
           </el-form-item>
         </el-col>
       </el-row>
-      
-      <el-form-item label="描述" prop="description">
-        <el-input
-          v-model="formData.description"
-          type="textarea"
-          :rows="2"
-          placeholder="模型描述信息"
-          size="small"
-        />
-      </el-form-item>
 
       <div class="field-definition-section">
         <div class="field-definition-header">
@@ -62,7 +52,7 @@
             empty-text="暂无字段定义，请点击'添加字段'按钮添加字段"
           >
             <el-table-column prop="displayName" label="显示名" min-width="150" align="center">
-              <template #default="{ row, $index }">
+              <template #default="{ row }">
                 <div class="table-cell-input-wrapper">
 
                     <el-input 
@@ -75,7 +65,7 @@
             </el-table-column>
             
             <el-table-column prop="name" label="字段名" min-width="150" align="center" header-align="center">
-              <template #default="{ row, $index }">
+              <template #default="{ row}">
                 <div class="table-cell-input-wrapper">
                     <el-input 
                       v-model="row.name" 
@@ -170,7 +160,6 @@ const isEdit = computed(() => !!props.schema)
 const formData = reactive({
   name: '',
   displayName: '',
-  description: '',
   definition: [] as FieldDefinition[]
 })
 
@@ -184,26 +173,12 @@ const formRules: FormRules = {
   ]
 }
 
-const fieldRules = {
-  name: [
-    { required: true, message: '请输入字段名', trigger: 'blur' },
-    { pattern: /^[a-z][a-z0-9_]*$/, message: '只能包含小写字母、数字和下划线，且以字母开头', trigger: 'blur' }
-  ],
-  displayName: [
-    { required: true, message: '请输入显示名称', trigger: 'blur' }
-  ],
-  type: [
-    { required: true, message: '请选择字段类型', trigger: 'change' }
-  ]
-}
-
 const addField = () => {
   formData.definition.push({
     name: '',
     displayName: '',
     type: 'string',
     required: false,
-    description: '',
     defaultValue: '',
     validations: {}
   })
@@ -282,7 +257,6 @@ watch(() => props.schema, (schema) => {
   if (schema) {
     formData.name = schema.name
     formData.displayName = schema.displayName
-    formData.description = schema.description || ''
     formData.definition = schema.definition ? [...schema.definition] : []
     
     // 确保每个字段都有 validations 对象
@@ -295,7 +269,6 @@ watch(() => props.schema, (schema) => {
     // 重置表单
     formData.name = ''
     formData.displayName = ''
-    formData.description = ''
     formData.definition = []
   }
 }, { immediate: true })

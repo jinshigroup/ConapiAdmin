@@ -137,8 +137,6 @@ export interface Entry {
   contentHash: string
   publishedAt?: string
   scheduledAt?: string
-  seoTitle?: string
-  seoDescription?: string
   slug?: string
   createdBy: number
   updatedBy?: number
@@ -150,9 +148,6 @@ export interface CreateEntryRequest {
   schemaId: number
   status?: string
   contentData: Record<string, any>
-  slug?: string
-  seoTitle?: string
-  seoDescription?: string
   scheduledAt?: string
   versionComment?: string
 }

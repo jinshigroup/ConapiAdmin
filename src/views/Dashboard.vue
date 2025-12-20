@@ -152,7 +152,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 import StatsCard from '@/components/StatsCard.vue'
@@ -161,8 +160,6 @@ import { contentApi } from '@/api/content'
 import { assetApi } from '@/api/asset'
 import { userApi } from '@/api/user'
 import { schemaApi } from '@/api/schema'
-
-const router = useRouter()
 
 const loading = ref(false)
 const activitiesLoading = ref(false)
