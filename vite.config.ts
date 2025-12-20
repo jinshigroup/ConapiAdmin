@@ -34,7 +34,7 @@ export default defineConfig({
     }
   },
   build: { //构建配置
-    outDir: 'dist', // 输出目录
+    outDir: 'docs', // 输出目录
     sourcemap: false, // 是否生成 source map
     rollupOptions: { // Rollup 打包选项
       output: {
