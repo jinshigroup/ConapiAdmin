@@ -22,12 +22,12 @@ export default defineConfig({
     // 代理配置，解决开发环境跨域问题
     proxy: {
       '/api': {
-        target: 'http://localhost:8080/', // API 代理目标地址
+        target: 'https://api.conapi.jinshi.group/', // API 代理目标地址
         changeOrigin: true, // 改变请求源
         timeout: 10000 // 设置超时时间
       },
       '/uploads': {
-        target: 'http://localhost:8080/', // 上传文件代理目标地址
+        target: 'https://api.conapi.jinshi.group/', // 上传文件代理目标地址
         changeOrigin: true, // 改变请求源
         timeout: 30000 // 上传可能需要更长时间
       }
