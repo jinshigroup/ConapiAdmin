@@ -16,45 +16,21 @@ export default defineConfig({
     }
   },
   server: { //开发服务器配置
-    port: 3000, // 端口号
-    host: true, // 允许外部访问
-    open: true, // 启动后自动打开浏览器
     // 代理配置，解决开发环境跨域问题
-    proxy: {
-      '/api': {
-        target: 'https://api.conapi.jinshi.group/', // API 代理目标地址
-        changeOrigin: true, // 改变请求源
-        timeout: 10000 // 设置超时时间
-      },
-      '/uploads': {
-        target: 'https://api.conapi.jinshi.group/', // 上传文件代理目标地址
-        changeOrigin: true, // 改变请求源
-        timeout: 30000 // 上传可能需要更长时间
-      }
-    }
+    // proxy: {
+    //   '/api': {
+    //     target: 'http://localhost:8080/', // API 代理目标地址
+    //     changeOrigin: true, // 改变请求源
+    //     timeout: 10000 // 设置超时时间
+    //   },
+    //   '/uploads': {
+    //     target: 'http://localhost:8080/', // 上传文件代理目标地址
+    //     changeOrigin: true, // 改变请求源
+    //     timeout: 30000 // 上传可能需要更长时间
+    //   }
+    // }
   },
   build: { //构建配置
-    outDir: 'docs', // 输出目录
-    sourcemap: false, // 是否生成 source map
-    rollupOptions: { // Rollup 打包选项
-      output: {
-        manualChunks: { // 分包优化，提高缓存效率
-          vendor: ['vue', 'vue-router', 'pinia'], // Vue 相关库
-          elementPlus: ['element-plus']  // UI 组件库
-        }
-      }
-    },
-    terserOptions: { // 生产环境优化选项
-      compress: {
-        drop_console: true, // 生产环境移除 console
-        drop_debugger: true // 生产环境移除 debugger
-      }
-    }
-  },
-  optimizeDeps: { //依赖优化配置 预构建常用依赖以提高开发服务器启动速度
-    include: ['vue', 'vue-router', 'pinia', 'element-plus']
-  },
-  css: {
-    devSourcemap: false
+    outDir: 'docs' // 输出目录
   }
 })
