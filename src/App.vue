@@ -7,8 +7,8 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useAppStore } from '@/stores/app'
-import { useUserStore } from '@/stores/user'
+import { useAppStore } from './stores/app'
+import { useUserStore } from './stores/user'
 
 const appStore = useAppStore()
 const userStore = useUserStore()

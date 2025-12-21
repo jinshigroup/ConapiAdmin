@@ -23,7 +23,7 @@
     <div class="login-form-container">
       <el-card class="login-card">
         <div class="login-header">
-          <img alt="Conapi" class="login-logo" src="@/assets/logo.png"/>
+          <img alt="Conapi" class="login-logo" src="../assets/logo.png"/>
           <h1 class="login-title">{{ t('login.title') }}</h1>
           <p class="login-subtitle">{{ t('login.subtitle') }}</p>
         </div>
@@ -75,10 +75,10 @@
 <script lang="ts" setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import { useUserStore } from '../stores/user.ts'
 import { type FormInstance, type FormRules } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { switchLanguage } from '@/locales' // 导入语言切换函数
+import { switchLanguage } from '../locales' // 导入语言切换函数
 
 const { t, locale } = useI18n()
 const router = useRouter()

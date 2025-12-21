@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authApi } from '@/api/auth'
-import type { User, LoginRequest } from '@/types/api'
+import { authApi } from '../api/auth.ts'
+import type { User, LoginRequest } from '../types/api.ts'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 

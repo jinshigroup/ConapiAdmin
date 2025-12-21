@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import Layout from '@/layouts/Layout.vue'
-import Dashboard from '@/views/Dashboard.vue'
-import Login from '@/views/Login.vue'
-import NotFound from '@/views/NotFound.vue'
-import Schema from '@/views/Schema.vue'
-import Asset from '@/views/Asset.vue'
-import User from '@/views/User.vue'
-import ApiManager from '@/views/ApiManager.vue'
+import { useUserStore } from '../stores/user.ts'
+import Layout from '../layouts/Layout.vue'
+import Dashboard from '../views/Dashboard.vue'
+import Login from '../views/Login.vue'
+import NotFound from '../views/NotFound.vue'
+import Schema from '../views/Schema.vue'
+import Asset from '../views/Asset.vue'
+import User from '../views/User.vue'
+import ApiManager from '../views/ApiManager.vue'
 
 /**
  * 公开路由

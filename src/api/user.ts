@@ -1,5 +1,5 @@
 import request from './request'
-import type { User, ApiPageResult } from '@/types/api'
+import type { User, ApiPageResult } from '../types/api.ts'
 
 // 创建用户请求类型
 export interface CreateUserRequest {

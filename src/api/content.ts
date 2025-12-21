@@ -1,5 +1,5 @@
 import request from './request'
-import type { Entry, CreateEntryRequest } from '@/types/api'
+import type { Entry, CreateEntryRequest } from '../types/api.ts'
 
 export const contentApi = {
   // 创建内容条目

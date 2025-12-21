@@ -1,5 +1,5 @@
 import request from './request'
-import type { AssetDTO, ApiPageResult } from '@/types/api'
+import type { AssetDTO, ApiPageResult } from '../types/api.ts'
 
 export const assetApi = {
   // 上传文件

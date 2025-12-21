@@ -156,7 +156,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, FormInstance } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { userApi, type CreateUserRequest, type UpdateUserRequest } from '@/api/user'
+import { userApi, type CreateUserRequest, type UpdateUserRequest } from '../api/user.ts'
 import { ElMessageBox } from 'element-plus'
 
 interface User {

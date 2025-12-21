@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
-import { privateRoutes } from '@/router'
+import { privateRoutes } from '../router'
 
 // src/stores/permission.ts
 export const usePermissionStore = defineStore('permission', () => {

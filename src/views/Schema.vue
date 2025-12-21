@@ -157,11 +157,11 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import SchemaFormDialog from '@/components/SchemaFormDialog.vue'
-import Entry from '@/views/Entry.vue'
-import { schemaApi } from '@/api/schema'
-import { contentApi } from '@/api/content'
-import type { ContentSchema } from '@/types/api'
+import SchemaFormDialog from '../components/SchemaFormDialog.vue'
+import Entry from '../views/Entry.vue'
+import { schemaApi } from '../api/schema.ts'
+import { contentApi } from '../api/content.ts'
+import type { ContentSchema } from '../types/api.ts'
 
 const route = useRoute()
 const loading = ref(false)

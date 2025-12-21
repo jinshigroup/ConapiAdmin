@@ -133,8 +133,8 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
-import { schemaApi } from '@/api/schema'
-import type { ContentSchema, FieldDefinition } from '@/types/api'
+import { schemaApi } from '../api/schema.ts'
+import type { ContentSchema, FieldDefinition } from '../types/api.ts'
 
 interface Props {
   modelValue: boolean

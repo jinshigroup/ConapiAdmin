@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { documentApi } from '@/api/document'
+import { documentApi } from '../api/document.ts'
 
 // 响应式数据
 const activeTab = ref('docs')

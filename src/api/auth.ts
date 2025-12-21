@@ -1,5 +1,5 @@
 import request from './request'
-import type { LoginRequest, LoginResponse, User, ApiResponse } from '@/types/api'
+import type { LoginRequest, LoginResponse, User, ApiResponse } from '../types/api.ts'
 
 export const authApi = {
   // 用户登录

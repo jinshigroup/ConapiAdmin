@@ -235,10 +235,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, UploadUserFile} from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { assetApi } from '@/api/asset'
-import type { AssetDTO } from '@/types/api'
-import { formatDate } from '@/utils/date'
-import { useUserStore } from '@/stores/user'
+import { assetApi } from '../api/asset.ts'
+import type { AssetDTO } from '../types/api.ts'
+import { formatDate } from '../utils/date.ts'
+import { useUserStore } from '../stores/user.ts'
 import { VideoPlay, Picture, Document } from '@element-plus/icons-vue'
 
 const { t } = useI18n()

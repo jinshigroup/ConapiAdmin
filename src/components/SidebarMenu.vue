@@ -31,8 +31,8 @@
 <script setup lang="ts">
 import { computed, watch, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAppStore } from '@/stores/app'
-import { usePermissionStore } from '@/stores/permission'
+import { useAppStore } from '../stores/app.ts'
+import { usePermissionStore } from '../stores/permission.ts'
 import { useI18n } from 'vue-i18n'
 
 // 国际化函数

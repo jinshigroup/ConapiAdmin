@@ -154,12 +154,12 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
-import StatsCard from '@/components/StatsCard.vue'
-import { formatTime } from '@/utils/date'
-import { contentApi } from '@/api/content'
-import { assetApi } from '@/api/asset'
-import { userApi } from '@/api/user'
-import { schemaApi } from '@/api/schema'
+import StatsCard from '../components/StatsCard.vue'
+import { formatTime } from '../utils/date.ts'
+import { contentApi } from '../api/content.ts'
+import { assetApi } from '../api/asset.ts'
+import { userApi } from '../api/user.ts'
+import { schemaApi } from '../api/schema.ts'
 
 const loading = ref(false)
 const activitiesLoading = ref(false)

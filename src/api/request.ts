@@ -1,6 +1,6 @@
 import axios from 'axios'
-import type { ApiResponse } from '@/types/api'
-import { useUserStore } from '@/stores/user'
+import type { ApiResponse } from '../types/api.ts'
+import { useUserStore } from '../stores/user.ts'
 
 const request = axios.create({
   baseURL:(import.meta.env.VITE_API_BASE_URL || '')+'/api',

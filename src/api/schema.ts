@@ -1,5 +1,5 @@
 import request from './request'
-import type { ContentSchema } from '@/types/api'
+import type { ContentSchema } from '../types/api.ts'
 
 export const schemaApi = {
   // 创建内容模型

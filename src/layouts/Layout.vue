@@ -9,7 +9,7 @@
       >
         <div class="sidebar-content">
           <div class="logo-section">
-            <img src="@/assets/logo.png" alt="Conapi" class="logo-img" />
+            <img src="../assets/logo.png" alt="Conapi" class="logo-img" />
             <span v-show="sidebarOpened" class="logo-text">ConAPI CMS</span>
           </div>
           <SidebarMenu />
@@ -172,10 +172,10 @@
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAppStore } from '@/stores/app'
-import { useUserStore } from '@/stores/user'
-import { usePermissionStore } from '@/stores/permission'
-import SidebarMenu from '@/components/SidebarMenu.vue'
+import { useAppStore } from '../stores/app.ts'
+import { useUserStore } from '../stores/user.ts'
+import { usePermissionStore } from '../stores/permission.ts'
+import SidebarMenu from '../components/SidebarMenu.vue'
 import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 
