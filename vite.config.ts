@@ -10,6 +10,7 @@ export default defineConfig({ //Vite 配置文件 配置开发服务器、构建
     proxy: { // 代理配置，解决开发环境跨域问题
       '/api': {
         target: 'http://localhost:8080/' // API 代理目标地址
+        //target: 'https://api.conapi.jinshi.group/' // API 代理目标地址
       }
     }
   },

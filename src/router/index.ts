@@ -3,7 +3,6 @@ import { useUserStore } from '../stores/user.ts'
 import Layout from '../layouts/Layout.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Login from '../views/Login.vue'
-import NotFound from '../views/NotFound.vue'
 import Schema from '../views/Schema.vue'
 import Asset from '../views/Asset.vue'
 import User from '../views/User.vue'
@@ -19,12 +18,6 @@ export const publicRoutes: RouteRecordRaw[] = [
         name: 'Login',
         component: Login,
         meta: { title: 'login.login' }
-    },
-    {
-        path: '/404',
-        name: 'NotFound',
-        component: NotFound,
-        meta: { title: 'menu.404' }
     }
 ]
 
@@ -122,7 +115,7 @@ const router = createRouter({
         ...publicRoutes,
         ...privateRoutes,
         { path: '/',redirect: '/dashboard'},
-        { path: '/:pathMatch(.*)*',component: NotFound}
+        { path: '/:pathMatch(.*)*',redirect: '/404.html'}
     ]
 })
 
@@ -131,7 +124,7 @@ router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore()
 
     // 如果访问的是公开路由，直接放行
-    if (to.path === '/login' || to.path === '/404') {
+    if (to.path === '/login') {
         next()
         return
     }

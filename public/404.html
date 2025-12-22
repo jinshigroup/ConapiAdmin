@@ -82,17 +82,6 @@
         .btn:active {
             transform: translateY(0);
         }
-
-        .path-info {
-            margin-top: 25px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            font-family: 'SFMono-Regular', Consolas, monospace;
-            font-size: 14px;
-            color: #666;
-            word-break: break-all;
-        }
     </style>
 </head>
 <body>
@@ -104,22 +93,14 @@
     <div class="actions">
         <button class="btn" onclick="window.location.href='/'">返回首页</button>
     </div>
-
-    <div class="path-info">
-        访问路径：<span id="current-path"></span>
-    </div>
 </div>
 
 <script>
-    // 显示当前访问路径
-    document.getElementById('current-path').textContent = window.location.pathname;
-
     // 如果是 SPA 路由，保存到 sessionStorage 让 Vue 处理
     const path = window.location.pathname;
     const isSpaRoute = !path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json)$/i);
 
     if (isSpaRoute && path !== '/') {
-        console.log('SPA 路由，记录重定向:', path);
         sessionStorage.setItem('vue-router-redirect',
             path + window.location.search + window.location.hash);
     }
