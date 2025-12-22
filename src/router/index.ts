@@ -83,7 +83,7 @@ export const privateRoutes: RouteRecordRaw[] = [
         ]
     },
     {
-        path: '/api',
+        path: '/document',
         name: 'ApiManager',
         component: Layout,
         children: [
@@ -121,8 +121,8 @@ const router = createRouter({
     routes: [
         ...publicRoutes,
         ...privateRoutes,
-        { path: '/', redirect: '/dashboard' },
-        { path: '/:pathMatch(.*)*', redirect: '/404' }
+        { path: '/', component: Layout},
+        { path: '/:pathMatch(.*)*',component: NotFound}
     ]
 })
 
@@ -130,11 +130,11 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore()
 
-  // 如果访问的是公开路由，直接放行
-  if (publicRoutes.some(route => route.path === to.path)) {
-      next()
-      return
-  }
+    // 如果访问的是公开路由，直接放行
+    if (to.path === '/login' || to.path === '/404') {
+        next()
+        return
+    }
 
   // 检查是否有token
   const token = userStore.token

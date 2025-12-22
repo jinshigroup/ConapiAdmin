@@ -2,19 +2,14 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-/**
- * Vite 配置文件 配置开发服务器、构建选项、插件等
- */
-export default defineConfig({
+export default defineConfig({ //Vite 配置文件 配置开发服务器、构建选项、插件等
   plugins: [ //插件配置
     vue() // Vue 插件，用于处理 .vue 文件
   ],
   server: { //开发服务器配置
     proxy: { // 代理配置，解决开发环境跨域问题
       '/api': {
-        target: 'https://api.conapi.jinshi.group/', // API 代理目标地址
-        changeOrigin: true, // 改变请求源
-        timeout: 10000 // 设置超时时间
+        target: 'http://localhost:8080/' // API 代理目标地址
       }
     }
   },

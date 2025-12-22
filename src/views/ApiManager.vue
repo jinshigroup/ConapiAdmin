@@ -74,11 +74,6 @@ const fetchApiDocumentation = async () => {
     if (response && response.modules) {
       apiModules.value = response.modules
     }
-    
-    // 设置基本信息（可选）
-    if (response && response.title) {
-      document.title = response.title
-    }
   } catch (error) {
     console.error('获取API文档失败:', error)
     ElMessage.error('获取API文档失败')
