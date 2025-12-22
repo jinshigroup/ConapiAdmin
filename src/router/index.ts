@@ -121,7 +121,7 @@ const router = createRouter({
     routes: [
         ...publicRoutes,
         ...privateRoutes,
-        { path: '/', component: Layout},
+        { path: '/',redirect: '/dashboard'},
         { path: '/:pathMatch(.*)*',component: NotFound}
     ]
 })
