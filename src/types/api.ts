@@ -157,7 +157,7 @@ export interface Asset {
   id: number
   tenantId: number
   filename: string
-  filePath: string
+  filePath: string // 用于存储OSS路径
   fileSize: number
   mimeType: string
   metadata: Record<string, any>

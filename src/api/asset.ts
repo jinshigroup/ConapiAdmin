@@ -13,6 +13,10 @@ export const assetApi = {
       }
     })
   },
+  // 创建资源记录（用于OSS上传后创建数据库记录）
+  create(data: { previewUrl: string; filename: string; fileSize: number; mimeType: string }) {
+    return request.post('/api/asset/create', data)
+  },
   
   // 获取资源列表
   getList(params?: {

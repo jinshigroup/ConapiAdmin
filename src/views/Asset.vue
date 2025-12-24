@@ -1,4 +1,4 @@
-<!-- src/views/Media.vue -->
+<!-- src/views/Asset.vue -->
 <template>
   <div class="media-page">
     <div class="page-header">
@@ -49,8 +49,8 @@
             :xl="4"
             class="asset-item-col"
           >
-            <el-card 
-              class="asset-card" 
+            <el-card
+              class="asset-card"
               :class="{ selected: selectedAssets.includes(asset.id) }"
               @click="toggleSelectAsset(asset.id)"
             >
@@ -130,36 +130,26 @@
       </el-button>
     </div>
 
-    <!-- 上传对话框 -->
+    <!-- 上传对话框 - 使用OSS上传组件 -->
     <el-dialog
       v-model="uploadDialogVisible"
       :title="t('media.upload')"
-      width="500px"
+      width="600px"
       @close="handleUploadDialogClose"
     >
-      <el-upload
-        ref="uploadRef"
-        class="upload-demo"
-        drag
-        :auto-upload="false"
-        :on-change="handleFileChange"
-        :on-remove="handleFileRemove"
-        :file-list="uploadFileList"
-        multiple
-      >
-        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-        <div class="el-upload__text">
-          {{ t('media.dropUpload') }} <em>{{ t('media.clickUpload') }}</em>
-        </div>
-      </el-upload>
+      <OssUploadComponent
+        ref="ossUploadRef"
+        @upload-success="handleUploadSuccess"
+        @upload-progress="handleUploadProgress"
+        @upload-error="handleUploadError"
+      />
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="uploadDialogVisible = false">{{ t('common.cancel') }}</el-button>
           <el-button
             type="primary"
             :loading="uploading"
-            :disabled="uploadFileList.length === 0"
-            @click="submitUpload"
+            @click="submitOssUpload"
           >
             {{ t('common.confirm') }}
           </el-button>
@@ -233,24 +223,25 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, UploadUserFile} from 'element-plus'
+import { ElMessage, ElMessageBox} from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { assetApi } from '../api/asset.ts'
 import type { AssetDTO } from '../types/api.ts'
 import { formatDate } from '../utils/date.ts'
 import { useUserStore } from '../stores/user.ts'
 import { VideoPlay, Picture, Document } from '@element-plus/icons-vue'
+import OssUploadComponent from '../components/OssUpload.vue' // 引入OSS上传组件
 
 const { t } = useI18n()
 
 // 数据状态
 const loading = ref(false)
 const uploading = ref(false)
+const uploadProgress = ref(0) // 添加上传进度
 const assets = ref<AssetDTO[]>([])
 const uploadDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
 const selectedAssets = ref<number[]>([])
-const uploadFileList = ref<UploadUserFile[]>([])
 const currentAsset = ref<AssetDTO | null>(null)
 
 // 存储已获取的图片URL
@@ -266,14 +257,14 @@ const pagination = reactive({
 // 搜索关键词
 const searchKeyword = ref('')
 
-// 表单引用
-const uploadRef = ref()
-
 // 详情表单
 const detailForm = reactive({
   altText: '',
   caption: ''
 })
+
+// 上传成功的文件路径列表
+const uploadedFilePaths = ref<string[]>([])
 
 // 判断是否为图片
 const isImage = (asset: AssetDTO) => {
@@ -292,12 +283,12 @@ const getAuthenticatedImageUrl = async (previewUrl: string) => {
     console.log('使用缓存的图片URL:', previewUrl, '->', imageUrls.value[previewUrl]);
     return imageUrls.value[previewUrl]
   }
-  
+
   if (!previewUrl) return ''
 
   try {
     console.log('开始获取图片:', previewUrl);
-    
+
     // 使用 fetch API 获取图片数据
     const token = useUserStore().token;
     const headers = {
@@ -313,7 +304,7 @@ const getAuthenticatedImageUrl = async (previewUrl: string) => {
 
     const blob = await response.blob();
     console.log('图片响应数据:', blob);
-    
+
     // 创建本地对象URL
     const imageUrl = URL.createObjectURL(blob);
     // 存储URL映射
@@ -333,7 +324,7 @@ const getAuthenticatedVideoUrl = async (videoUrl: string) => {
     console.log('使用缓存的视频URL:', videoUrl, '->', imageUrls.value[videoUrl]);
     return imageUrls.value[videoUrl];
   }
-  
+
   if (!videoUrl) {return '';}
 
   try {
@@ -383,16 +374,16 @@ const fetchAssets = async () => {
       page: pagination.page - 1,
       size: pagination.size
     })
-    
+
     assets.value = response.content
     pagination.total = response.totalElements || 0
-    
+
     console.log('获取到资源列表:', assets.value);
-    
+
     // 预加载所有图片
     const imageAssets = assets.value.filter(asset => isImage(asset) && asset.previewUrl);
     console.log('需要预加载的图片资源:', imageAssets);
-    
+
     // 预加载图片
     await Promise.all(imageAssets.map(async (asset) => {
       console.log('预加载图片:', asset.previewUrl);
@@ -400,7 +391,7 @@ const fetchAssets = async () => {
         await getAuthenticatedImageUrl(asset.previewUrl)
       }
     }))
-    
+
     console.log('所有资源预加载完成，当前imageUrls:', imageUrls.value);
   } catch (error) {
     console.error('获取资源列表失败:', error)
@@ -432,53 +423,87 @@ const updateAssetDetail = async () => {
 // 处理上传
 const handleUpload = () => {
   uploadDialogVisible.value = true
+  uploadedFilePaths.value = [] // 重置上传文件列表
+  uploadProgress.value = 0
 }
 
-// 处理文件变化
-const handleFileChange = (file: UploadUserFile) => {
-  uploadFileList.value.push(file)
+// OSS上传成功回调
+const handleUploadSuccess = (filePath: string) => {
+  uploadedFilePaths.value.push(filePath)
+  ElMessage.success(t('media.uploadSuccess'))
 }
 
-// 处理文件移除
-const handleFileRemove = (file: UploadUserFile) => {
-  const index = uploadFileList.value.findIndex(item => item.uid === file.uid)
-  if (index > -1) {
-    uploadFileList.value.splice(index, 1)
-  }
+// OSS上传进度回调
+const handleUploadProgress = (progress: number) => {
+  uploadProgress.value = progress
 }
 
-// 提交上传
-const submitUpload = async () => {
-  if (uploadFileList.value.length === 0) {
+// OSS上传错误回调
+const handleUploadError = (error: Error) => {
+  console.error('OSS上传失败:', error)
+  ElMessage.error(t('media.uploadFailed'))
+  uploading.value = false
+}
+
+// 提交OSS上传
+const submitOssUpload = async () => {
+  if (uploadedFilePaths.value.length === 0) {
     ElMessage.warning(t('media.noFilesSelected'))
     return
   }
 
   try {
     uploading.value = true
-    const uploadPromises = uploadFileList.value.map(file => {
-      if (file.raw) {
-        return assetApi.upload(file.raw)
-      }
-      return Promise.reject(new Error('文件无效'))
+
+    // 调用后端API创建资源记录
+    const createPromises = uploadedFilePaths.value.map(filePath => {
+      return assetApi.create({
+        previewUrl: filePath, // OSS路径
+        filename: getFileNameFromPath(filePath),
+        fileSize: 0, // 文件大小在OSS中获取
+        mimeType: getMimeTypeFromPath(filePath)
+      })
     })
 
-    await Promise.all(uploadPromises)
+    await Promise.all(createPromises)
+
     ElMessage.success(t('media.uploadSuccess'))
     uploadDialogVisible.value = false
     fetchAssets()
   } catch (error) {
-    console.error('上传失败:', error)
+    console.error('创建资源记录失败:', error)
     ElMessage.error(t('media.uploadFailed'))
   } finally {
     uploading.value = false
   }
 }
 
+// 从路径获取文件名
+const getFileNameFromPath = (path: string): string => {
+  return path.split('/').pop() || path
+}
+
+// 从路径获取MIME类型
+const getMimeTypeFromPath = (path: string): string => {
+  const ext = path.split('.').pop()?.toLowerCase() || ''
+  const mimeTypes: Record<string, string> = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'mp4': 'video/mp4',
+    'avi': 'video/x-msvideo',
+    'mov': 'video/quicktime',
+    'wmv': 'video/x-ms-wmv'
+  }
+  return mimeTypes[ext] || 'application/octet-stream'
+}
+
 // 处理上传对话框关闭
 const handleUploadDialogClose = () => {
-  uploadFileList.value = []
-  uploadRef.value?.clearFiles()
+  uploadedFilePaths.value = []
+  uploadProgress.value = 0
 }
 
 // 切换选择资源
@@ -511,7 +536,7 @@ const handleBatchDelete = async () => {
 
     const deletePromises = selectedAssets.value.map(id => assetApi.delete(id))
     await Promise.all(deletePromises)
-    
+
     ElMessage.success(t('media.deleteSuccess'))
     selectedAssets.value = []
     fetchAssets()
@@ -529,7 +554,7 @@ const handleSearch = async (event?: Event) => {
   if (event && event.preventDefault) {
     event.preventDefault()
   }
-  
+
   try {
     loading.value = true
     // 如果有搜索关键词，使用搜索API，否则获取所有资源
@@ -572,24 +597,24 @@ const handleCurrentChange = (val: number) => {
 // 播放视频
 const playVideo = async (videoUrl: string | undefined) => {
   console.log('尝试播放视频，URL为:', videoUrl);
-  
+
   // 检查URL是否有效
   if (!videoUrl || videoUrl.trim() === '') {
     console.error('视频URL为空或无效');
     ElMessage.error('视频URL无效，无法播放');
     return;
   }
-  
+
   try {
     // 获取带认证的视频URL
     const authenticatedVideoUrl = await getAuthenticatedVideoUrl(videoUrl);
-    
+
     if (!authenticatedVideoUrl) {
       // 错误信息已经在 getAuthenticatedVideoUrl 中显示
       console.log('无法获取视频数据');
       return;
     }
-    
+
     // 创建视频播放模态框
     createVideoModal(authenticatedVideoUrl);
   } catch (error: any) {
@@ -601,7 +626,7 @@ const playVideo = async (videoUrl: string | undefined) => {
 // 创建视频播放模态框
 const createVideoModal = (videoSrc: string) => {
   console.log('创建视频播放模态框，视频源:', videoSrc);
-  
+
   // 创建视频播放模态框
   const modal = document.createElement('div');
   modal.className = 'video-modal';
@@ -617,7 +642,7 @@ const createVideoModal = (videoSrc: string) => {
     align-items: center;
     z-index: 10000;
   `;
-  
+
   // 创建视频元素
   const video = document.createElement('video');
   video.src = videoSrc;
@@ -631,7 +656,7 @@ const createVideoModal = (videoSrc: string) => {
     outline: none;
     background: black;
   `;
-  
+
   // 添加加载提示
   const loadingIndicator = document.createElement('div');
   loadingIndicator.textContent = '视频加载中...';
@@ -641,20 +666,20 @@ const createVideoModal = (videoSrc: string) => {
     font-size: 16px;
   `;
   modal.appendChild(loadingIndicator);
-  
+
   // 添加错误处理
   video.addEventListener('error', (e) => {
     console.error('视频播放出错:', e);
     loadingIndicator.textContent = '视频播放出错，请检查控制台了解详细信息';
     ElMessage.error('视频播放出错，请检查控制台了解详细信息');
   });
-  
+
   // 视频开始加载
   video.addEventListener('loadstart', () => {
     console.log('视频开始加载');
     loadingIndicator.textContent = '视频加载中...';
   });
-  
+
   // 视频可以播放
   video.addEventListener('canplay', () => {
     console.log('视频可以播放');
@@ -662,7 +687,7 @@ const createVideoModal = (videoSrc: string) => {
       modal.removeChild(loadingIndicator);
     }
   });
-  
+
   // 视频播放中
   video.addEventListener('playing', () => {
     console.log('视频正在播放');
@@ -670,7 +695,7 @@ const createVideoModal = (videoSrc: string) => {
       modal.removeChild(loadingIndicator);
     }
   });
-  
+
   // 创建关闭按钮
   const closeBtn = document.createElement('button');
   closeBtn.innerHTML = '&times;';
@@ -686,14 +711,14 @@ const createVideoModal = (videoSrc: string) => {
     outline: none;
     z-index: 10001;
   `;
-  
+
   // 添加事件监听器
   closeBtn.onclick = () => {
     document.body.removeChild(modal);
     video.pause();
     // 注意：这里不释放URL，因为我们可能还会用到它
   };
-  
+
   modal.onclick = (e) => {
     if (e.target === modal) {
       document.body.removeChild(modal);
@@ -701,17 +726,17 @@ const createVideoModal = (videoSrc: string) => {
       // 注意：这里不释放URL，因为我们可能还会用到它
     }
   };
-  
+
   // 视频加载元数据事件
   video.addEventListener('loadedmetadata', () => {
     console.log('视频元数据加载完成');
   });
-  
+
   // 视频加载完成事件
   video.addEventListener('loadeddata', () => {
     console.log('视频数据加载完成');
   });
-  
+
   // 视频播放事件
   video.addEventListener('play', () => {
     console.log('视频开始播放');
@@ -719,12 +744,12 @@ const createVideoModal = (videoSrc: string) => {
       modal.removeChild(loadingIndicator);
     }
   });
-  
+
   // 组装模态框
   modal.appendChild(video);
   modal.appendChild(closeBtn);
   document.body.appendChild(modal);
-  
+
   // 确保视频加载
   video.load();
   console.log('视频加载已启动');
@@ -839,7 +864,7 @@ onMounted(() => {
               width: 100%;
               height: 100%;
               position: relative;
-              
+
 
             }
 
@@ -939,4 +964,5 @@ onMounted(() => {
     max-height: 300px;
     object-fit: contain;
   }
-}</style>
+}
+</style>
