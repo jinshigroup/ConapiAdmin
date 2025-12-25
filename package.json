@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "ali-oss": "^6.23.0",
     "axios": "^1.4.0",
     "dayjs": "^1.11.9",
     "echarts": "^5.4.2",
@@ -24,7 +23,6 @@
     "vue-router": "^4.2.4"
   },
   "devDependencies": {
-    "@types/ali-oss": "^6.16.13",
     "@types/js-cookie": "^3.0.3",
     "@types/lodash-es": "^4.17.7",
     "@types/node": "^18.16.0",

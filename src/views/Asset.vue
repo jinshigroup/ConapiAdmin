@@ -276,7 +276,7 @@ const isVideo = (asset: AssetDTO) => {
   return asset.mimeType && asset.mimeType.startsWith('video/')
 }
 
-// 获取带认证的图片URL
+// 获取带认证的图片URL - 修改为使用内网路径
 const getAuthenticatedImageUrl = async (previewUrl: string) => {
   // 如果已经获取过该URL，直接返回
   if (imageUrls.value[previewUrl]) {
@@ -289,30 +289,17 @@ const getAuthenticatedImageUrl = async (previewUrl: string) => {
   try {
     console.log('开始获取图片:', previewUrl);
 
-    // 使用 fetch API 获取图片数据
-    const token = useUserStore().token;
-    const headers = {
-      'Authorization': `Bearer ${token}`
-    };
+    // 使用内网下载路径
+    const imageUrl = previewUrl.startsWith('/oss/') ?
+        `${window.location.origin}${previewUrl}` :
+        previewUrl;
 
-    const response = await fetch(previewUrl, { headers });
-
-    if (!response.ok) {
-      console.error('获取图片失败，HTTP状态码:', response.status);
-      return '';
-    }
-
-    const blob = await response.blob();
-    console.log('图片响应数据:', blob);
-
-    // 创建本地对象URL
-    const imageUrl = URL.createObjectURL(blob);
     // 存储URL映射
     imageUrls.value[previewUrl] = imageUrl;
-    console.log('图片获取成功:', previewUrl, '->', imageUrl);
+    console.log('图片URL处理完成:', previewUrl, '->', imageUrl);
     return imageUrl;
   } catch (error) {
-    console.error('获取图片失败:', error);
+    console.error('处理图片URL失败:', error);
     return '';
   }
 }
