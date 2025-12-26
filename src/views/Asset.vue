@@ -55,36 +55,24 @@
               @click="toggleSelectAsset(asset.id)"
             >
               <div class="asset-preview">
-                <div v-if="isVideo(asset)" class="video-preview">
-                  <div class="video-wrapper" @click.stop="playVideo(asset.previewUrl)">
-                    <div class="no-preview">
-                      <el-icon :size="40"><VideoPlay /></el-icon>
-                      <div>点击播放视频</div>
-                    </div>
-                    <div class="video-overlay">
-                      <el-icon class="play-icon"><VideoPlay /></el-icon>
-                    </div>
-                  </div>
-                </div>
                 <el-image
-                  v-else
-                  :src="asset.previewUrl ? imageUrls[asset.previewUrl] : ''"
-                  :alt="asset.altText || asset.filename"
-                  fit="cover"
-                  class="asset-image"
-                  :preview-src-list="[asset.previewUrl ? imageUrls[asset.previewUrl] : '']"
-                  :preview-teleported="true"
-                  hide-on-click-modal
+                    :src="asset.filePath ? buildImageUrl(asset.filePath) : ''"
+                    :alt="asset.altText || asset.filename"
+                    fit="cover"
+                    class="asset-image"
+                    :preview-src-list="[asset.filePath ? buildImageUrl(asset.filePath) : '']"
+                    :preview-teleported="true"
+                    hide-on-click-modal
                 >
                   <template #error>
                     <div class="image-slot">
-                      <el-icon v-if="isImage(asset)" :size="40"><Picture /></el-icon>
-                      <el-icon v-else :size="40"><Document /></el-icon>
-                      <div v-if="asset.previewUrl">图片加载失败</div>
+                      <el-icon :size="40"><Picture /></el-icon>
+                      <div>图片加载失败</div>
                     </div>
                   </template>
                 </el-image>
               </div>
+
               <div class="asset-info">
                 <div class="asset-name" :title="asset.filename">
                   {{ asset.filename }}
@@ -170,14 +158,15 @@
       >
         <el-form-item :label="t('media.preview')">
           <el-image
-              :src="currentAsset.previewUrl ? imageUrls[currentAsset.previewUrl] : ''"
-              :alt="currentAsset.altText || currentAsset.filename"
+              :src="currentAsset?.filePath ? buildImageUrl(currentAsset.filePath) : ''"
+              :alt="currentAsset?.altText || currentAsset?.filename"
               fit="cover"
               class="detail-image"
-              :preview-src-list="[currentAsset.previewUrl ? imageUrls[currentAsset.previewUrl] : '']"
+              :preview-src-list="[currentAsset?.filePath ? buildImageUrl(currentAsset.filePath) : '']"
               :preview-teleported="true"
               hide-on-click-modal
           />
+
         </el-form-item>
         <el-form-item :label="t('media.filename')">
           <el-input v-model="currentAsset.filename" readonly />
@@ -222,14 +211,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox} from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { assetApi } from '../api/asset.ts'
 import type { AssetDTO } from '../types/api.ts'
 import { formatDate } from '../utils/date.ts'
-import { useUserStore } from '../stores/user.ts'
-import { VideoPlay, Picture, Document } from '@element-plus/icons-vue'
+import {Picture} from '@element-plus/icons-vue'
 import OssUploadComponent from '../components/OssUpload.vue' // 引入OSS上传组件
 
 const { t } = useI18n()
@@ -263,85 +251,34 @@ const detailForm = reactive({
   caption: ''
 })
 
+// 构建完整图片 URL
+const buildImageUrl = (filePath: string) => {
+  if (!filePath) return '';
+  return imageUrls.value[filePath] || '';
+};
+
+// 异步获取并缓存图片URL
+const fetchAndCacheImageUrl = async (filePath: string) => {
+  if (!filePath) return '';
+  
+  try {
+    const blob = await assetApi.getSignedImageUrl(filePath);
+    const url = URL.createObjectURL(blob);
+    // 缓存URL
+    imageUrls.value[filePath] = url;
+    return url;
+  } catch (error) {
+    console.error('获取图片失败:', error);
+    return '';
+  }
+};
+
 // 上传成功的文件路径列表
 const uploadedFilePaths = ref<string[]>([])
 
 // 判断是否为图片
 const isImage = (asset: AssetDTO) => {
   return asset.mimeType && asset.mimeType.startsWith('image/')
-}
-
-// 判断是否为视频
-const isVideo = (asset: AssetDTO) => {
-  return asset.mimeType && asset.mimeType.startsWith('video/')
-}
-
-// 获取带认证的图片URL - 修改为使用内网路径
-const getAuthenticatedImageUrl = async (previewUrl: string) => {
-  // 如果已经获取过该URL，直接返回
-  if (imageUrls.value[previewUrl]) {
-    console.log('使用缓存的图片URL:', previewUrl, '->', imageUrls.value[previewUrl]);
-    return imageUrls.value[previewUrl]
-  }
-
-  if (!previewUrl) return ''
-
-  try {
-    console.log('开始获取图片:', previewUrl);
-
-    // 使用内网下载路径
-    const imageUrl = previewUrl.startsWith('/oss/') ?
-        `${window.location.origin}${previewUrl}` :
-        previewUrl;
-
-    // 存储URL映射
-    imageUrls.value[previewUrl] = imageUrl;
-    console.log('图片URL处理完成:', previewUrl, '->', imageUrl);
-    return imageUrl;
-  } catch (error) {
-    console.error('处理图片URL失败:', error);
-    return '';
-  }
-}
-
-// 获取带认证的视频URL
-const getAuthenticatedVideoUrl = async (videoUrl: string) => {
-  // 如果已经获取过该URL，直接返回
-  if (imageUrls.value[videoUrl]) {
-    console.log('使用缓存的视频URL:', videoUrl, '->', imageUrls.value[videoUrl]);
-    return imageUrls.value[videoUrl];
-  }
-
-  if (!videoUrl) {return '';}
-
-  try {
-    console.log('开始获取视频:', videoUrl);
-
-    // 使用 fetch API 获取图片数据
-    const token = useUserStore().token;
-    const headers = {
-      'Authorization': `Bearer ${token}`
-    };
-
-    const response = await fetch(videoUrl, { headers });
-
-    console.log('视频响应数据:', response);
-
-
-    const blob = await response.blob();
-    console.log('图片响应数据:', blob);
-
-
-    // 创建本地对象URL
-    const videoUrlObj = URL.createObjectURL(blob);
-    // 存储URL映射
-    imageUrls.value[videoUrl] = videoUrlObj;
-    console.log('视频获取成功:', videoUrl, '->', videoUrlObj);
-    return videoUrlObj;
-  } catch (error: any) {
-    console.error('获取视频失败:', error);
-    return '';
-  }
 }
 
 // 格式化文件大小
@@ -367,17 +304,13 @@ const fetchAssets = async () => {
 
     console.log('获取到资源列表:', assets.value);
 
-    // 预加载所有图片
-    const imageAssets = assets.value.filter(asset => isImage(asset) && asset.previewUrl);
-    console.log('需要预加载的图片资源:', imageAssets);
-
-    // 预加载图片
-    await Promise.all(imageAssets.map(async (asset) => {
-      console.log('预加载图片:', asset.previewUrl);
-      if (asset.previewUrl) {
-        await getAuthenticatedImageUrl(asset.previewUrl)
+    // 预加载所有图片的URL
+    const imageAssets = assets.value.filter(asset => isImage(asset) && asset.filePath);
+    for (const asset of imageAssets) {
+      if (asset.filePath) {
+        await fetchAndCacheImageUrl(asset.filePath);
       }
-    }))
+    }
 
     console.log('所有资源预加载完成，当前imageUrls:', imageUrls.value);
   } catch (error) {
@@ -478,11 +411,7 @@ const getMimeTypeFromPath = (path: string): string => {
     'jpeg': 'image/jpeg',
     'png': 'image/png',
     'gif': 'image/gif',
-    'webp': 'image/webp',
-    'mp4': 'video/mp4',
-    'avi': 'video/x-msvideo',
-    'mov': 'video/quicktime',
-    'wmv': 'video/x-ms-wmv'
+    'webp': 'image/webp'
   }
   return mimeTypes[ext] || 'application/octet-stream'
 }
@@ -581,171 +510,22 @@ const handleCurrentChange = (val: number) => {
   fetchAssets()
 }
 
-// 播放视频
-const playVideo = async (videoUrl: string | undefined) => {
-  console.log('尝试播放视频，URL为:', videoUrl);
-
-  // 检查URL是否有效
-  if (!videoUrl || videoUrl.trim() === '') {
-    console.error('视频URL为空或无效');
-    ElMessage.error('视频URL无效，无法播放');
-    return;
-  }
-
-  try {
-    // 获取带认证的视频URL
-    const authenticatedVideoUrl = await getAuthenticatedVideoUrl(videoUrl);
-
-    if (!authenticatedVideoUrl) {
-      // 错误信息已经在 getAuthenticatedVideoUrl 中显示
-      console.log('无法获取视频数据');
-      return;
-    }
-
-    // 创建视频播放模态框
-    createVideoModal(authenticatedVideoUrl);
-  } catch (error: any) {
-    console.error('播放视频失败:', error);
-    ElMessage.error('视频播放失败: ' + (error.message || '未知错误'));
-  }
-};
-
-// 创建视频播放模态框
-const createVideoModal = (videoSrc: string) => {
-  console.log('创建视频播放模态框，视频源:', videoSrc);
-
-  // 创建视频播放模态框
-  const modal = document.createElement('div');
-  modal.className = 'video-modal';
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-  `;
-
-  // 创建视频元素
-  const video = document.createElement('video');
-  video.src = videoSrc;
-  video.controls = true;
-  video.autoplay = true; // 启用自动播放
-  video.playsInline = true; // iOS Safari兼容
-  video.muted = true; // 静音以允许自动播放
-  video.style.cssText = `
-    max-width: 95%;
-    max-height: 95%;
-    outline: none;
-    background: black;
-  `;
-
-  // 添加加载提示
-  const loadingIndicator = document.createElement('div');
-  loadingIndicator.textContent = '视频加载中...';
-  loadingIndicator.style.cssText = `
-    position: absolute;
-    color: white;
-    font-size: 16px;
-  `;
-  modal.appendChild(loadingIndicator);
-
-  // 添加错误处理
-  video.addEventListener('error', (e) => {
-    console.error('视频播放出错:', e);
-    loadingIndicator.textContent = '视频播放出错，请检查控制台了解详细信息';
-    ElMessage.error('视频播放出错，请检查控制台了解详细信息');
-  });
-
-  // 视频开始加载
-  video.addEventListener('loadstart', () => {
-    console.log('视频开始加载');
-    loadingIndicator.textContent = '视频加载中...';
-  });
-
-  // 视频可以播放
-  video.addEventListener('canplay', () => {
-    console.log('视频可以播放');
-    if (modal.contains(loadingIndicator)) {
-      modal.removeChild(loadingIndicator);
-    }
-  });
-
-  // 视频播放中
-  video.addEventListener('playing', () => {
-    console.log('视频正在播放');
-    if (modal.contains(loadingIndicator)) {
-      modal.removeChild(loadingIndicator);
-    }
-  });
-
-  // 创建关闭按钮
-  const closeBtn = document.createElement('button');
-  closeBtn.innerHTML = '&times;';
-  closeBtn.style.cssText = `
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 36px;
-    cursor: pointer;
-    outline: none;
-    z-index: 10001;
-  `;
-
-  // 添加事件监听器
-  closeBtn.onclick = () => {
-    document.body.removeChild(modal);
-    video.pause();
-    // 注意：这里不释放URL，因为我们可能还会用到它
-  };
-
-  modal.onclick = (e) => {
-    if (e.target === modal) {
-      document.body.removeChild(modal);
-      video.pause();
-      // 注意：这里不释放URL，因为我们可能还会用到它
-    }
-  };
-
-  // 视频加载元数据事件
-  video.addEventListener('loadedmetadata', () => {
-    console.log('视频元数据加载完成');
-  });
-
-  // 视频加载完成事件
-  video.addEventListener('loadeddata', () => {
-    console.log('视频数据加载完成');
-  });
-
-  // 视频播放事件
-  video.addEventListener('play', () => {
-    console.log('视频开始播放');
-    if (modal.contains(loadingIndicator)) {
-      modal.removeChild(loadingIndicator);
-    }
-  });
-
-  // 组装模态框
-  modal.appendChild(video);
-  modal.appendChild(closeBtn);
-  document.body.appendChild(modal);
-
-  // 确保视频加载
-  video.load();
-  console.log('视频加载已启动');
-};
-
 // 生命周期
 onMounted(() => {
   fetchAssets()
 })
+
+// 组件卸载时清理图片URL
+onUnmounted(() => {
+  // 释放所有缓存的图片URL
+  Object.values(imageUrls.value).forEach(url => {
+    if (url) {
+      URL.revokeObjectURL(url);
+    }
+  });
+  imageUrls.value = {};
+});
+
 </script>
 
 <style scoped lang="scss">

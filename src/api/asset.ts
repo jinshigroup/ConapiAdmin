@@ -15,7 +15,7 @@ export const assetApi = {
   },
   // 创建资源记录（用于OSS上传后创建数据库记录）
   create(data: { previewUrl: string; filename: string; fileSize: number; mimeType: string }) {
-    return request.post('/api/asset/create', data)
+    return request.post('/rest/v1/asset/create', data)
   },
   
   // 获取资源列表
@@ -46,5 +46,12 @@ export const assetApi = {
   // 搜索资源
   search(keyword: string): Promise<AssetDTO[]> {
     return request.get('/rest/v1/asset/search', { params: { keyword } })
+  },
+
+  // 获取签名图片 URL
+  getSignedImageUrl(filePath: string): Promise<Blob> {
+    return request.get(`/oss/${filePath}`, {
+      responseType: 'blob'
+    })
   }
 }
