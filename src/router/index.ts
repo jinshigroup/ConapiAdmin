@@ -6,8 +6,6 @@ import Login from '../views/Login.vue'
 import Schema from '../views/Schema.vue'
 import Asset from '../views/Asset.vue'
 import User from '../views/User.vue'
-import ApiManager from '../views/ApiManager.vue'
-
 /**
  * 公开路由
  * 无需登录即可访问的路由
@@ -71,22 +69,6 @@ export const privateRoutes: RouteRecordRaw[] = [
                 meta: {
                     title: 'menu.schema',
                     icon: 'Collection'
-                }
-            }
-        ]
-    },
-    {
-        path: '/document',
-        name: 'ApiManager',
-        component: Layout,
-        children: [
-            {
-                path: '',
-                name: 'ApiManagerPage',
-                component: ApiManager,
-                meta: {
-                    title: 'API 管理',
-                    icon: 'Link'
                 }
             }
         ]
