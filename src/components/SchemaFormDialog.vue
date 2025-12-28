@@ -86,6 +86,7 @@
                   >
                     <el-option label="文本" value="string" />
                     <el-option label="长文本" value="text" />
+                    <el-option label="富文本" value="richText" />
                     <el-option label="数字" value="number" />
                     <el-option label="布尔值" value="boolean" />
                     <el-option label="日期" value="date" />
