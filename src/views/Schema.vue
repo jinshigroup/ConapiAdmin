@@ -10,7 +10,7 @@
                 <div class="toolbar-wrapper">
                   <el-input
                     v-model="searchKeyword"
-                    placeholder="搜索内容模型..."
+                    :placeholder="t('content.searchPlaceholder') || '搜索内容模型...'"
                     clearable
                     @clear="handleSearch"
                     @keyup.enter="handleSearch"
@@ -24,7 +24,7 @@
                     icon="Plus" 
                     @click="handleCreateModel"
                   >
-                    创建模型
+                    {{ t('content.createSchema') || '创建模型' }}
                   </el-button>
                 </div>
               </div>
@@ -47,49 +47,25 @@
                       <div class="schema-name">{{ schema.name }}</div>
                     </div>
                     <div class="schema-meta">
-                      <el-tag 
-                        :type="schema.status === 'active' ? 'success' : 'info'" 
-                        size="small"
-                      >
-                        {{ schema.status === 'active' ? '活跃' : '停用' }}
-                      </el-tag>
-                      <span class="entry-count">{{ getEntryCount(schema.id) }} 项内容</span>
+                      <span class="entry-count">{{ getEntryCount(schema.id) }} {{ t('content.entries') || '项内容' }}</span>
                     </div>
                   </div>
                   
                   <div class="schema-actions">
                     <el-button
+                      v-if="getEntryCount(schema.id) === 0"
                       type="primary"
                       link
                       size="small"
-                      @click="editSchema(schema)"
+                      @click="handleEditSchema(schema)"
                     >
                       <el-icon><Edit /></el-icon>
-                      <span>编辑</span>
+                      <span>{{ t('common.edit') || '编辑' }}</span>
                     </el-button>
-                    <el-button
-                      v-if="schema.status === 'active'"
-                      type="warning"
-                      link
-                      size="small"
-                      @click="toggleStatus(schema, 'inactive')"
-                    >
-                      <el-icon><Lock /></el-icon>
-                      <span>停用</span>
-                    </el-button>
-                    <el-button
-                      v-else
-                      type="success"
-                      link
-                      size="small"
-                      @click="toggleStatus(schema, 'active')"
-                    >
-                      <el-icon><Unlock /></el-icon>
-                      <span>激活</span>
-                    </el-button>
+
                     <el-popconfirm
-                      v-if="!schema.isSystem"
-                      :title="`确定要删除内容模型 ${schema.displayName} 吗？`"
+                      v-if="!schema.isSystem && getEntryCount(schema.id) === 0"
+                      :title="getDeleteConfirmTitle(schema)"
                       @confirm="deleteSchema(schema)"
                     >
                       <template #reference>
@@ -100,7 +76,7 @@
                           @click.stop
                         >
                           <el-icon><Delete /></el-icon>
-                          <span>删除</span>
+                          <span>{{ t('common.delete') || '删除' }}</span>
                         </el-button>
                       </template>
                     </el-popconfirm>
@@ -108,7 +84,7 @@
                 </div>
                 
                 <div v-if="schemas.length === 0 && !loading" class="empty-schema">
-                  <el-empty description="暂无内容模型" :image-size="80" />
+                  <el-empty :description="t('content.noSchemas') || '暂无内容模型'" :image-size="80" />
                 </div>
               </el-scrollbar>
             </div>
@@ -133,7 +109,7 @@
           v-if="selectedSchema"
           :schema-id="selectedSchema.id" 
           :key="`${selectedSchema.id}-${entryListKey}`"
-          :title="selectedSchema?.displayName || '内容列表'"
+          :title="selectedSchema?.displayName || (t('content.list') || '内容列表')"
         />
       </div>
     </div>
@@ -157,12 +133,15 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '../stores/user'
+import { useI18n } from 'vue-i18n'
 import SchemaFormDialog from '../components/SchemaFormDialog.vue'
 import Entry from '../views/Entry.vue'
 import { schemaApi } from '../api/schema.ts'
 import { contentApi } from '../api/content.ts'
 import type { ContentSchema } from '../types/api.ts'
 
+const { t } = useI18n()
 const route = useRoute()
 const loading = ref(false)
 const schemas = ref<ContentSchema[]>([])
@@ -181,7 +160,7 @@ const checkForCreateAction = () => {
   
   // 如果有schemaId且需要创建新内容，则直接打开创建对话框
   if (schemaId && create) {
-    const schema = schemas.value.find(s => s.id === parseInt(schemaId as string))
+    const schema = schemas.value.find(s => s.id === schemaId)
     if (schema) {
       selectedSchema.value = schema
       showContentPanel.value = true
@@ -200,7 +179,7 @@ const pageSize = ref(5) // 改为每页5条
 const total = ref(0)
 
 // 存储每个模型的实际内容数量
-const entryCounts = ref<Record<number, number>>({})
+const entryCounts = ref<Record<string, number>>({})
 
 // 监听路由变化，如果离开当前页面，需要清理状态
 onBeforeRouteLeave(() => {
@@ -237,9 +216,12 @@ const handleMenuNavigation = async (event: CustomEvent) => {
 // 添加事件监听器
 onMounted(() => {
   window.addEventListener('menu-navigation', handleMenuNavigation as unknown as EventListener)
-  fetchSchemas().then(() => {
-    // 获取模型列表后再检查是否需要执行创建操作
-    checkForCreateAction()
+  // 确保获取最新的用户信息
+  userStore.fetchCurrentUser().finally(() => {
+    fetchSchemas().then(() => {
+      // 获取模型列表后再检查是否需要执行创建操作
+      checkForCreateAction()
+    })
   })
 })
 
@@ -305,14 +287,14 @@ const fetchSchemas = async () => {
     // 获取每个模型的实际内容数量
     await Promise.all(schemas.value.map(schema => fetchEntryCount(schema.id)))
   } catch (error) {
-    ElMessage.error('获取内容模型失败')
+    ElMessage.error(t('content.fetchSchemaFailed') || '获取内容模型失败')
   } finally {
     loading.value = false
   }
 }
 
 // 获取指定模型的内容数量
-const fetchEntryCount = async (schemaId: number) => {
+const fetchEntryCount = async (schemaId: string) => {
   try {
     const response = await contentApi.getList({
       schemaId: schemaId,
@@ -338,40 +320,42 @@ const handleSearch = () => {
   fetchSchemas()
 }
 
-const getEntryCount = (schemaId: number) => {
+const getEntryCount = (schemaId: string) => {
   return entryCounts.value[schemaId] || 0
 }
 
 const viewEntries = (schema: ContentSchema) => {
+  if (!schema || !schema.id) {
+    ElMessage.warning(t('content.pleaseSelectValidSchema') || '请选择一个有效的模型')
+    return
+  }
   selectedSchema.value = schema
   showContentPanel.value = true
   entryListKey.value += 1 // 当切换模型时，增加key值以强制EntryList重新创建
 }
 
-const editSchema = (schema: ContentSchema) => {
+// 确保在组件挂载时初始化选中的模型
+onMounted(() => {
+  if (schemas.value.length > 0 && !selectedSchema.value) {
+    selectedSchema.value = schemas.value[0]
+    showContentPanel.value = true
+  }
+})
+
+const handleEditSchema = (schema: ContentSchema) => {
+  if (getEntryCount(schema.id) > 0) {
+    ElMessage.warning(t('content.schemaHasEntriesCannotEdit') || '该模型有内容，无法编辑')
+    return
+  }
   editingSchema.value = schema
   showEditDialog.value = true
 }
 
-const toggleStatus = async (schema: ContentSchema, status: string) => {
-  try {
-    if (status === 'active') {
-      await schemaApi.activate(schema.id)
-      ElMessage.success('激活成功')
-    } else {
-      await schemaApi.deactivate(schema.id)
-      ElMessage.success('停用成功')
-    }
-    fetchSchemas()
-  } catch (error) {
-    ElMessage.error('操作失败')
-  }
-}
 
 const deleteSchema = async (schema: ContentSchema) => {
   try {
     await schemaApi.delete(schema.id)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('common.deleteSuccess') || '删除成功')
     // 如果删除的是当前选中的模型，清空选中
     if (selectedSchema.value?.id === schema.id) {
       selectedSchema.value = null
@@ -382,9 +366,9 @@ const deleteSchema = async (schema: ContentSchema) => {
         showContentPanel.value = true
       }
     }
-    fetchSchemas()
+    await fetchSchemas()
   } catch (error) {
-    ElMessage.error('删除失败')
+    ElMessage.error(t('common.deleteFailed') || '删除失败')
   }
 }
 
@@ -405,9 +389,19 @@ const handleEditSuccess = () => {
 }
 
 // 处理创建模型按钮点击事件
+const userStore = useUserStore()
 const handleCreateModel = () => {
   showCreateDialog.value = true
 }
+
+const getDeleteConfirmTitle = (schema: ContentSchema) => {
+  const translated = t('common.deleteConfirmMsg', { name: schema.displayName })
+  if (translated !== 'common.deleteConfirmMsg') { // 如果翻译成功，返回翻译结果
+    return translated
+  }
+  return `确定要删除内容模型 ${schema.displayName} 吗？`
+}
+
 </script>
 
 <style scoped lang="scss">
@@ -514,6 +508,10 @@ const handleCreateModel = () => {
                     font-size: 14px;
                     font-weight: 500;
                     color: #303133;
+                    max-width: 150px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                   }
                   
                   .schema-name {

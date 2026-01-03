@@ -258,21 +258,42 @@ watch(() => props.schema, (schema) => {
   if (schema) {
     formData.name = schema.name
     formData.displayName = schema.displayName
-    formData.definition = schema.definition ? [...schema.definition] : []
-    
-    // 确保每个字段都有 validations 对象
-    formData.definition.forEach(field => {
-      if (!field.validations) {
-        field.validations = {}
-      }
-    })
+    // 确保字段定义数组不为空，并且每个字段都有完整的结构
+    formData.definition = schema.definition ? schema.definition.map(field => ({
+      name: field.name || '',
+      displayName: field.displayName || '',
+      type: field.type || 'string',
+      required: field.required || false,
+      defaultValue: field.defaultValue || '',
+      validations: field.validations || {},
+      description: field.description || ''
+    })) : []
   } else {
     // 重置表单
     formData.name = ''
     formData.displayName = ''
     formData.definition = []
   }
-}, { immediate: true })
+}, { immediate: true, deep: true })
+
+// 当对话框打开时，强制重新加载数据
+watch(dialogVisible, (visible) => {
+  if (visible && props.schema) {
+    // 强制重新加载数据
+    const schema = props.schema
+    formData.name = schema.name
+    formData.displayName = schema.displayName
+    formData.definition = schema.definition ? schema.definition.map(field => ({
+      name: field.name || '',
+      displayName: field.displayName || '',
+      type: field.type || 'string',
+      required: field.required || false,
+      defaultValue: field.defaultValue || '',
+      validations: field.validations || {},
+      description: field.description || ''
+    })) : []
+  }
+})
 
 // 监听对话框关闭
 watch(dialogVisible, (visible) => {

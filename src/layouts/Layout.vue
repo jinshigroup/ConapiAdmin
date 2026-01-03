@@ -1,110 +1,86 @@
 <template>
   <div class="modern-layout">
-    <el-container class="main-container">
-      <!-- 侧边栏 -->
-      <el-aside 
-        v-if="!isMobile || sidebarOpened" 
-        :width="isMobile ? '240px' : (sidebarOpened ? '240px' : '64px')" 
-        class="modern-sidebar"
-      >
-        <div class="sidebar-content">
-          <div class="logo-section">
+    <!-- 顶部导航区域 -->
+    <div class="top-navigation">
+      <!-- 顶部导航栏 -->
+      <div class="modern-header">
+        <div class="header-left">
+          <!-- 只保留Logo -->
+          <div class="logo-only-section">
             <img src="../assets/logo.png" alt="Conapi" class="logo-img" />
-            <span v-show="sidebarOpened" class="logo-text">ConAPI CMS</span>
+            <span class="logo-text">ConAPI CMS</span>
           </div>
-          <SidebarMenu />
         </div>
-      </el-aside>
-      
-      <!-- 主内容区 -->
-      <el-container class="content-container">
-        <!-- 顶部导航栏 -->
-        <el-header class="modern-header">
-          <div class="header-left">
-            <el-button 
-              class="menu-toggle" 
-              @click="toggleSidebar" 
-              circle 
-              :icon="sidebarOpened ? 'Fold' : 'Expand'"
-            />
-            
-          </div>
+        
+        <div class="header-right">
+          <!-- 语言切换 -->
+          <el-dropdown @command="switchLanguage" trigger="click">
+            <el-button class="language-btn">
+              {{ currentLanguageText }}
+              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="zh-CN">中文</el-dropdown-item>
+                <el-dropdown-item command="en-US">English</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           
-          <div class="header-right">
-            <!-- 语言切换 -->
-            <el-dropdown @command="switchLanguage" trigger="click">
-              <el-button class="language-btn">
-                {{ currentLanguageText }}
-                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="zh-CN">中文</el-dropdown-item>
-                  <el-dropdown-item command="en-US">English</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+          <!-- 用户菜单 -->
+          <el-dropdown @command="handleUserCommand" trigger="click">
+            <div class="user-profile">
+              <el-avatar :size="32" :src="userAvatar">
+                {{ userInitial }}
+              </el-avatar>
+              <span class="user-name" v-show="!isMobile">{{ userStore.currentUser?.name }}</span>
+              <el-icon v-show="!isMobile"><ArrowDown /></el-icon>
+            </div>
             
-            <!-- 用户菜单 -->
-            <el-dropdown @command="handleUserCommand" trigger="click">
-              <div class="user-profile">
-                <el-avatar :size="32" :src="userAvatar">
-                  {{ userInitial }}
-                </el-avatar>
-                <span class="user-name" v-show="!isMobile">{{ userStore.currentUser?.name }}</span>
-                <el-icon v-show="!isMobile"><ArrowDown /></el-icon>
-              </div>
-              
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <!-- 添加个人资料菜单项 -->
-                  <el-dropdown-item command="profile">
-                    <el-icon><User /></el-icon>
-                    {{ t('user.profile') }}
-                  </el-dropdown-item>
-                  <el-dropdown-item command="changePassword">
-                    <el-icon><Key /></el-icon>
-                    {{ t('user.changePassword') }}
-                  </el-dropdown-item>
-                  <el-dropdown-item divided command="logout">
-                    <el-icon><SwitchButton /></el-icon>
-                    {{ t('login.logout') }}
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
-        </el-header>
-        
-        <!-- 遮罩层 (移动端) -->
-        <div 
-          v-if="isMobile && sidebarOpened" 
-          class="mobile-overlay" 
-          @click="closeSidebar"
-        ></div>
-        
-        <el-main class="main-content">
-          <router-view v-slot="{ Component }">
-            <transition name="fade-transform" mode="out-in">
-              <component :is="Component" />
-            </transition>
-          </router-view>
-        </el-main>
-      </el-container>
-    </el-container>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <!-- 添加个人资料菜单项 -->
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>
+                  {{ t('user.profile') }}
+                </el-dropdown-item>
+                <el-dropdown-item command="changePassword">
+                  <el-icon><Key /></el-icon>
+                  {{ t('user.changePassword') }}
+                </el-dropdown-item>
+
+                <el-dropdown-item divided command="logout">
+                  <el-icon><SwitchButton /></el-icon>
+                  {{ t('login.logout') }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <router-view v-slot="{ Component }">
+        <transition name="fade-transform" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </div>
     
     <!-- 修改密码对话框 -->
     <el-dialog
       v-model="passwordDialogVisible"
       :title="t('user.changePassword')"
-      width="500px"
+      width="600px"
       @close="resetPasswordForm"
     >
       <el-form
         ref="passwordFormRef"
         :model="passwordForm"
         :rules="passwordRules"
-        label-width="120px"
+        label-width="140px"
       >
         <el-form-item :label="t('user.oldPassword')" prop="oldPassword">
           <el-input
@@ -166,31 +142,28 @@
         
       </el-form>
     </el-dialog>
+    
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAppStore } from '../stores/app.ts'
 import { useUserStore } from '../stores/user.ts'
 import { usePermissionStore } from '../stores/permission.ts'
-import SidebarMenu from '../components/SidebarMenu.vue'
 import { useI18n } from 'vue-i18n'
+import { User, Key, SwitchButton, ArrowDown } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 // 国际化
 const { t, locale } = useI18n()
 const router = useRouter()
-const appStore = useAppStore()
 const userStore = useUserStore()
 const permissionStore = usePermissionStore()
 
 // 响应式相关
 const isMobile = ref(false)
-
-// 侧边栏状态
-const sidebarOpened = computed(() => appStore.sidebarOpened)
 
 // 当前语言文本
 const currentLanguageText = computed(() => {
@@ -223,6 +196,7 @@ const userProfile = reactive({
   role: userStore.currentUser?.role || ''
 })
 
+
 // 密码验证规则
 const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
   if (value === '') {
@@ -250,9 +224,6 @@ const passwordRules = reactive<FormRules>({
 // 检测屏幕尺寸
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 768
-  if (isMobile.value) {
-    appStore.toggleSidebar()
-  }
 }
 
 onMounted(() => {
@@ -269,16 +240,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', checkScreenSize)
 })
-
-// 切换侧边栏
-const toggleSidebar = () => {
-  appStore.toggleSidebar()
-}
-
-// 关闭侧边栏（移动端）
-const closeSidebar = () => {
-  appStore.toggleSidebar()
-}
 
 // 切换语言
 const switchLanguage = (lang: string) => {
@@ -301,6 +262,7 @@ const handleUserCommand = async (command: string) => {
       }
       profileDialogVisible.value = true
       break
+
     case 'changePassword':
       passwordDialogVisible.value = true
       break
@@ -330,6 +292,7 @@ const resetProfileForm = () => {
   }
 }
 
+
 // 提交密码修改
 const submitPasswordChange = async () => {
   if (!passwordFormRef.value) return
@@ -348,48 +311,15 @@ const submitPasswordChange = async () => {
 <style scoped lang="scss">
 .modern-layout {
   height: 100%;
-}
-
-.main-container {
-  height: 100%;
-}
-
-.modern-sidebar {
-  background-color: #001529;
-  transition: width 0.28s;
-  box-shadow: 2px 0 8px 0 rgba(29, 35, 41, 0.1);
-  z-index: 1001;
-  
-  .sidebar-content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    
-    .logo-section {
-      display: flex;
-      align-items: center;
-      padding: 14px 20px;
-      border-bottom: 1px solid #002140;
-      
-      .logo-img {
-        width: 32px;
-        height: 32px;
-        margin-right: 12px;
-      }
-      
-      .logo-text {
-        color: #ffffff;
-        font-size: 16px;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-    }
-  }
-}
-
-.content-container {
+  display: flex;
   flex-direction: column;
-  height: 100%;
+}
+
+.top-navigation {
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  z-index: 1000;
+  position: relative;
 }
 
 .modern-header {
@@ -398,17 +328,29 @@ const submitPasswordChange = async () => {
   justify-content: space-between;
   height: 60px;
   padding: 0 20px;
-  background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
-  z-index: 999;
   
   .header-left {
     display: flex;
     align-items: center;
     
-    .menu-toggle {
-      margin-right: 20px;
-      z-index: 1002; // 确保菜单按钮在最上层
+    .logo-only-section {
+      display: flex;
+      align-items: center;
+      // 移除深色背景，与导航栏保持一致
+      padding: 8px 16px;
+      
+      .logo-img {
+        width: 32px;
+        height: 32px;
+        margin-right: 12px;
+      }
+      
+      .logo-text {
+        color: #303133; // 使用与导航栏一致的字体颜色
+        font-size: 16px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
     }
   }
   
@@ -441,17 +383,6 @@ const submitPasswordChange = async () => {
   }
 }
 
-.mobile-overlay {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 999;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(2px);
-}
-
 .main-content {
   flex: 1;
   overflow: auto;
@@ -459,6 +390,25 @@ const submitPasswordChange = async () => {
   background-color: #f0f2f5;
   position: relative;
   z-index: 1;
+}
+
+.code-card {
+  background-color: #f8f9fa;
+  margin-top: 10px;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 14px;
+}
+
+code {
+  background-color: #f1f2f3;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
 }
 
 // 面包屑导航 - 去重并过滤

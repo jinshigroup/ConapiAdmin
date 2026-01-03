@@ -38,25 +38,6 @@ export const usePermissionStore = defineStore('permission', () => {
 
     // 处理嵌套路由结构，确保所有路由都是一级菜单
     const processedRoutes = accessedRoutes.map(route => {
-      // 特殊处理根路径（仪表盘）
-      if (route.path === '/') {
-        // 保留其子路由结构，但确保首页能正确显示在菜单中
-        if (route.children && route.children.length > 0) {
-          const dashboardChild = route.children.find((child: any) => child.path === 'dashboard');
-          if (dashboardChild) {
-            // 为根路径添加仪表盘的元信息，以便在菜单中显示
-            route.meta = {
-              ...route.meta,
-              ...dashboardChild.meta,
-              title: dashboardChild.meta?.title || 'dashboard.title'
-            };
-            // 确保路径正确
-            route.path = '/dashboard';
-          }
-        }
-        return route;
-      }
-
       // 处理其他路由 - 确保它们可以直接在菜单中显示
       if (route.children && route.children.length > 0) {
         // 对于有子路由的情况，我们需要确保父路由具有正确的元信息
@@ -109,25 +90,6 @@ export const usePermissionStore = defineStore('permission', () => {
 
     // 处理嵌套路由结构，确保所有路由都是一级菜单
     const processedRoutes = accessedRoutes.map(route => {
-      // 特殊处理根路径（仪表盘）
-      if (route.path === '/') {
-        // 保留其子路由结构，但确保首页能正确显示在菜单中
-        if (route.children && route.children.length > 0) {
-          const dashboardChild = route.children.find((child: any) => child.path === 'dashboard');
-          if (dashboardChild) {
-            // 为根路径添加仪表盘的元信息，以便在菜单中显示
-            route.meta = {
-              ...route.meta,
-              ...dashboardChild.meta,
-              title: dashboardChild.meta?.title || 'dashboard.title'
-            };
-            // 确保路径正确
-            route.path = '/dashboard';
-          }
-        }
-        return route;
-      }
-
       // 处理其他路由 - 确保它们可以直接在菜单中显示
       if (route.children && route.children.length > 0) {
         // 对于有子路由的情况，我们需要确保父路由具有正确的元信息

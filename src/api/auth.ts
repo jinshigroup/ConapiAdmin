@@ -4,27 +4,22 @@ import type { LoginRequest, LoginResponse, User, ApiResponse } from '../types/ap
 export const authApi = {
   // 用户登录
   login(data: LoginRequest): Promise<LoginResponse> {
-    return request.post('/rest/v1/auth/login', data)
-  },
-  
-  // 用户注册
-  register(data: any): Promise<ApiResponse> {
-    return request.post('/rest/v1/auth/register', data)
+    return request.post('/auth/login', data)
   },
   
   // 获取当前用户信息
   getCurrentUser(): Promise<User> {
-    return request.get('/rest/v1/auth/me')
+    return request.get('/auth/me')
   },
   
   // 退出登录
   logout(): Promise<ApiResponse> {
-    return request.post('/rest/v1/auth/logout')
+    return request.post('/auth/logout')
   },
   
   // 修改密码
   changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse> {
-    return request.put('/rest/v1/auth/change-password', {
+    return request.put('/auth/changePassword', {
       currentPassword,
       newPassword
     })

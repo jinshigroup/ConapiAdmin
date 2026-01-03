@@ -16,7 +16,7 @@ export const useUserStore = defineStore('user', () => {
   const isLoggedIn = computed(() => !!token.value)
   const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'super_admin')
   const userRole = computed(() => currentUser.value?.role || '')
-
+  
   // 登录
   const login = async (loginData: LoginRequest) => {
     try {
@@ -50,14 +50,23 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  // 初始化用户状态
+// 初始化用户状态
   const initUser = () => {
     const savedToken = localStorage.getItem('token')
     const savedUser = localStorage.getItem('user')
 
-    if (savedToken && savedUser) {
+    if (savedToken && savedToken !== 'undefined') {
       token.value = savedToken
-      currentUser.value = JSON.parse(savedUser)
+
+      if (savedUser && savedUser !== 'undefined') {
+        try {
+          currentUser.value = JSON.parse(savedUser)
+        } catch (e) {
+          console.error('Failed to parse user data from localStorage:', e)
+          // 清理无效数据
+          localStorage.removeItem('user')
+        }
+      }
     }
   }
 

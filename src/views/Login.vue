@@ -115,8 +115,8 @@ const handleLogin = async () => {
       password: loginForm.password
     })
     
-    // 登录成功后，始终跳转到仪表板
-    router.push('/dashboard')
+    // 登录成功后，跳转到系统首页
+    router.push('/')
   } catch (error: any) {
     // 错误消息已经在 userStore.login 中处理过了，这里不需要再处理
     console.error('Login error:', error)

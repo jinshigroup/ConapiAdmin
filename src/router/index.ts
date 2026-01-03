@@ -1,11 +1,9 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '../stores/user.ts'
 import Layout from '../layouts/Layout.vue'
-import Dashboard from '../views/Dashboard.vue'
 import Login from '../views/Login.vue'
 import Schema from '../views/Schema.vue'
-import Asset from '../views/Asset.vue'
-import User from '../views/User.vue'
+
 /**
  * 公开路由
  * 无需登录即可访问的路由
@@ -25,40 +23,7 @@ export const publicRoutes: RouteRecordRaw[] = [
  */
 export const privateRoutes: RouteRecordRaw[] = [
     {
-        path: '/dashboard',
-        component: Layout,
-        name: 'Dashboard',
-        children: [
-            {
-                path: '',
-                name: 'DashboardPage',
-                component: Dashboard,
-                meta: {
-                    title: 'dashboard.title',
-                    icon: 'Odometer',
-                    affix: true
-                }
-            }
-        ]
-    },
-    {
-        path: '/asset',
-        name: 'Asset',
-        component: Layout,
-        children: [
-            {
-                path: '',
-                name: 'AssetList',
-                component: Asset,
-                meta: {
-                    title: 'media.title',
-                    icon: 'Picture'
-                }
-            }
-        ]
-    },
-    {
-        path: '/schema',
+        path: '/',
         name: 'Schema',
         component: Layout,
         children: [
@@ -72,22 +37,6 @@ export const privateRoutes: RouteRecordRaw[] = [
                 }
             }
         ]
-    },
-    {
-        path: '/user',
-        name: 'User',
-        component: Layout,
-        children: [
-            {
-                path: '',
-                name: 'UserList',
-                component: User,
-                meta: {
-                    title: 'user.title',
-                    icon: 'User'
-                }
-            }
-        ]
     }
 ]
 
@@ -96,12 +45,12 @@ const router = createRouter({
     routes: [
         ...publicRoutes,
         ...privateRoutes,
-        { path: '/',redirect: '/dashboard'},
+        { path: '/',redirect: '/'}, // 更改首页为内容模型页面
         { path: '/:pathMatch(.*)*',redirect: '/404.html'}
     ]
 })
 
-// 全局前置守卫
+// 全局前守卫
 router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore()
 

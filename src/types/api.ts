@@ -75,22 +75,6 @@ export interface LoginResponse {
   expiresIn: number
 }
 
-// 租户相关类型
-export interface Tenant {
-  id: number
-  name: string
-  subdomain: string
-  status: string
-  planType: string
-  config: Record<string, any>
-  features: Record<string, any>
-  maxUsers: number
-  maxStorage: number
-  trialEndsAt?: string
-  createdAt: string
-  updatedAt: string
-}
-
 export interface CreateTenantRequest {
   name: string
   subdomain: string
@@ -112,7 +96,7 @@ export interface FieldDefinition {
 }
 
 export interface ContentSchema {
-  id: number
+  id: string
   tenantId: number
   name: string
   displayName: string
@@ -130,7 +114,7 @@ export interface ContentSchema {
 export interface Entry {
   id: number
   tenantId: number
-  schemaId: number
+  schemaId: string
   status: string
   version: number
   contentData: Record<string, any>
@@ -145,7 +129,7 @@ export interface Entry {
 }
 
 export interface CreateEntryRequest {
-  schemaId: number
+  schemaId: string
   status?: string
   contentData: Record<string, any>
   scheduledAt?: string
@@ -172,29 +156,4 @@ export interface AssetDTO extends Asset {
   downloadUrl: string
   previewUrl?: string
   imageDimensions?: string
-}
-
-// AI操作相关类型
-export interface AIOperation {
-  id: number
-  tenantId: number
-  entryId?: number
-  schemaId?: number
-  operationType: string
-  inputPrompt?: string
-  inputContent?: Record<string, any>
-  outputResult?: Record<string, any>
-  aiModel: string
-  aiProvider: string
-  usageTokens?: number
-  promptTokens?: number
-  completionTokens?: number
-  cost: number
-  status: string
-  errorMessage?: string
-  retryCount: number
-  createdBy?: number
-  completedAt?: string
-  createdAt: string
-  updatedAt: string
 }
